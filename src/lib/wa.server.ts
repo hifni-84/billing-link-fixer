@@ -48,7 +48,12 @@ async function ensureLogTable() {
 
 /** Pastikan alamat selalu absolut (tanpa skema, link WhatsApp tidak bisa dibuka). */
 function normalizeBase(raw: string) {
-  const v = raw.trim().replace(/\/+$/, "");
+  const v = raw
+    .trim()
+    .replace(/\/+$/, "")
+    // Hindari link ganda seperti .../portal/portal?u=...
+    .replace(/\/portal$/i, "")
+    .replace(/\/+$/, "");
   if (!v) return "";
   if (/^https?:\/\//i.test(v)) return v;
   return `https://${v.replace(/^\/+/, "")}`;
