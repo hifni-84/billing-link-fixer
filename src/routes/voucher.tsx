@@ -244,9 +244,17 @@ function VoucherPage() {
   const [templates, setTemplates] = useState<VoucherTemplate[]>([TEMPLATE_DEFAULT]);
   const [tplId, setTplId] = useState("default");
   useEffect(() => {
-    const l = loadTemplates();
-    setTemplates(l);
-    setTplId(l[0]?.id ?? "default");
+    let batal = false;
+    void (async () => {
+      const res = await voucherTemplatesGet();
+      const l = res.ok ? res.templates : loadTemplates();
+      if (batal) return;
+      setTemplates(l);
+      setTplId(l[0]?.id ?? "default");
+    })();
+    return () => {
+      batal = true;
+    };
   }, []);
 
   const [printOpen, setPrintOpen] = useState(false);
