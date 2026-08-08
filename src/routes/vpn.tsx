@@ -177,8 +177,8 @@ function VpnPage() {
   return (
     <div>
       <PageHeader
-        title="VPN Router (WireGuard)"
-        description={`Tambahkan router ke-2 dan seterusnya dari panel ini — tanpa mengetik apa pun di server. Total router: ${list.length}`}
+        title="VPN Router"
+        description={`Hubungkan MikroTik jauh lewat WireGuard (RouterOS v7) atau L2TP/IPsec (RouterOS v6). Router WireGuard: ${list.length}`}
         action={
           <Button variant="outline" size="sm" onClick={invalidate}>
             <RefreshCw className="mr-2 size-4" /> Muat Ulang
@@ -186,6 +186,12 @@ function VpnPage() {
         }
       />
 
+      <Tabs defaultValue="wg">
+        <TabsList className="mb-4">
+          <TabsTrigger value="wg">WireGuard (v7)</TabsTrigger>
+          <TabsTrigger value="l2tp">L2TP/IPsec (v6)</TabsTrigger>
+        </TabsList>
+        <TabsContent value="wg">
       <div className="panel mb-6 p-5">
         <h2 className="mb-3 text-sm font-semibold">Status Server Tunnel</h2>
         <div className="grid gap-3 text-xs sm:grid-cols-2 lg:grid-cols-4">
