@@ -11,6 +11,7 @@ import {
   type WaOptions,
 } from "./invoice-types";
 import { getSettings, query } from "./radius.server";
+import { getRequest } from "@tanstack/react-start/server";
 
 export async function waOptions(): Promise<WaOptions> {
   return parseWaOptions(await getSettings());
