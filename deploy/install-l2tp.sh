@@ -36,6 +36,7 @@ conn billing-l2tp
   keyexchange=ikev1
   authby=secret
   type=transport
+  forceencaps=yes
   left=%any
   leftprotoport=17/1701
   right=%any
