@@ -17,6 +17,7 @@ import {
 import { toast } from "sonner";
 
 import { NasManager } from "@/components/NasManager";
+import { DomainManager } from "@/components/DomainManager";
 import { RouterManager } from "@/components/RouterManager";
 import { BackupRestore } from "@/components/BackupRestore";
 import { PageHeader } from "@/components/Shared";
@@ -591,6 +592,8 @@ function PengaturanPage() {
             <Save className="size-4" /> Simpan Alamat Publik
           </Button>
         </div>
+
+        <DomainManager />
 
         <div className="panel p-6 lg:col-span-2">
           <div className="flex flex-wrap items-start justify-between gap-4">
