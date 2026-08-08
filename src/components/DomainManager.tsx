@@ -3,7 +3,7 @@
  * simpan daftar domain, terapkan ke Nginx, dan pasang SSL otomatis.
  */
 import { useEffect, useState } from "react";
-import { Globe2, Loader2, Plus, ShieldCheck, Trash2 } from "lucide-react";
+import { Globe2, Loader2, Lock, LockOpen, Plus, ShieldCheck, Trash2, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,9 @@ export function DomainManager() {
   const [setupCmd, setSetupCmd] = useState("");
   const [busy, setBusy] = useState(false);
   const [log, setLog] = useState("");
+  const [publicIp, setPublicIp] = useState<string | null>(null);
+  const [suggested, setSuggested] = useState<string | null>(null);
+  const [certs, setCerts] = useState<{ domain: string; installed: boolean }[]>([]);
 
   useEffect(() => {
     void domainStatusGet()
@@ -33,6 +36,9 @@ export function DomainManager() {
         setHttps(s.options.https);
         setReady(s.ready);
         setSetupCmd(s.setupCommand);
+        setPublicIp(s.publicIp);
+        setSuggested(s.suggestedDomain);
+        setCerts(s.certs);
       })
       .catch(() => undefined);
   }, []);
@@ -57,13 +63,25 @@ export function DomainManager() {
       else if (res.ok) toast.success("Domain diterapkan ke server");
       else toast.error("Domain tersimpan, tapi penerapan di server gagal");
       const st = await domainStatusGet();
-      if (st.ok && st.status) setReady(st.status.ready);
+      if (st.ok && st.status) {
+        setReady(st.status.ready);
+        setCerts(st.status.certs);
+      }
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
       setBusy(false);
     }
   };
+
+  const useSuggested = () => {
+    if (!suggested) return;
+    setDomains((cur) => [suggested, ...cur.filter((d) => d.trim() && d.trim() !== suggested)]);
+    setHttps(true);
+    toast.success(`Domain gratis ${suggested} dipakai sebagai domain utama`);
+  };
+
+  const certOf = (d: string) => certs.find((c) => c.domain === d.trim().toLowerCase());
 
   return (
     <div className="panel p-6 lg:col-span-2">
@@ -89,6 +107,24 @@ export function DomainManager() {
         </div>
       )}
 
+      <div className="mb-4 rounded-md border border-border bg-secondary/40 p-3 text-xs">
+        <p>
+          IP publik server:{" "}
+          <span className="mono-num font-medium">{publicIp ?? "belum terdeteksi"}</span>
+        </p>
+        {suggested && (
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <span className="text-muted-foreground">
+              Belum punya domain? Pakai domain gratis instan{" "}
+              <span className="mono-num font-medium">{suggested}</span> — langsung bisa HTTPS.
+            </span>
+            <Button size="sm" variant="outline" onClick={useSuggested}>
+              <Wand2 className="size-3.5" /> Pakai domain gratis
+            </Button>
+          </div>
+        )}
+      </div>
+
       <div className="grid gap-3">
         {domains.map((d, i) => (
           <div key={i} className="flex items-end gap-2">
@@ -102,6 +138,19 @@ export function DomainManager() {
                 value={d}
                 onChange={(e) => setAt(i, e.target.value)}
               />
+              {d.trim() && certOf(d) && (
+                <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                  {certOf(d)?.installed ? (
+                    <>
+                      <Lock className="size-3 text-emerald-500" /> HTTPS aktif
+                    </>
+                  ) : (
+                    <>
+                      <LockOpen className="size-3 text-amber-500" /> Belum ada sertifikat
+                    </>
+                  )}
+                </p>
+              )}
             </div>
             <Button
               variant="ghost"
