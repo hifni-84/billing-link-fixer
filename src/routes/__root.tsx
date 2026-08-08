@@ -4,13 +4,22 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
+import nrLogo from "@/assets/nr-logo.png";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { AuthGate } from "@/components/AuthGate";
+import { LicenseGate } from "@/components/LicenseGate";
+import { MaintenanceRunner } from "@/components/MaintenanceRunner";
+import { AppSidebar } from "@/components/AppSidebar";
+import { ReadOnlyGuard } from "@/components/ReadOnlyGuard";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { Toaster } from "@/components/ui/sonner";
 
 function NotFoundComponent() {
   return (
@@ -77,11 +86,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "NAJWA_BILLING — Billing Hotspot MikroTik" },
+      {
+        name: "description",
+        content:
+          "Kelola profil bandwidth, generate dan cetak voucher, pantau user aktif, serta lihat laporan pendapatan hotspot MikroTik.",
+      },
+      { name: "author", content: "NAJWA_BILLING" },
+      { property: "og:title", content: "NAJWA_BILLING — Billing Hotspot MikroTik" },
+      {
+        property: "og:description",
+        content: "Panel billing hotspot MikroTik: profil, voucher, user aktif, dan laporan.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:site", content: "@Lovable" },
@@ -91,7 +107,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: appCss,
       },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "preconnect", href: "https://fonts.googleapis.com" },
+      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
+      {
+        rel: "stylesheet",
+        href: "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap",
+      },
+      { rel: "icon", href: "/favicon.png", type: "image/png" },
     ],
   }),
   shellComponent: RootShell,
@@ -116,11 +138,47 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const pathname = useRouterState({ select: (r) => r.location.pathname });
+  // Portal pelanggan bersifat publik: tanpa login dan tanpa sidebar admin.
+  const publik = pathname.startsWith("/portal");
+
+  if (publik) {
+    return (
+      <QueryClientProvider client={queryClient}>
+        <Outlet />
+        <Toaster position="top-right" />
+      </QueryClientProvider>
+    );
+  }
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
+      <AuthGate>
+      <LicenseGate>
+      <MaintenanceRunner />
+      <SidebarProvider>
+        <div className="flex min-h-screen w-full">
+          <AppSidebar />
+          <div className="flex min-w-0 flex-1 flex-col">
+            <ReadOnlyGuard />
+            <header className="no-print sticky top-0 z-20 flex h-14 items-center gap-3 border-b border-border bg-background/80 px-4 backdrop-blur">
+              <SidebarTrigger />
+              <img src={nrLogo} alt="NR" className="size-6 rounded-md object-cover" />
+              <span className="text-sm font-semibold tracking-tight text-foreground">
+                NAJWA_BILLING
+              </span>
+              <span className="text-xs text-muted-foreground">· Hotspot & PPPoE</span>
+            </header>
+            <main className="flex-1 p-4 md:p-6">
+              {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+              <Outlet />
+            </main>
+          </div>
+        </div>
+      </SidebarProvider>
+      </LicenseGate>
+      </AuthGate>
+      <Toaster position="top-right" />
     </QueryClientProvider>
   );
 }
