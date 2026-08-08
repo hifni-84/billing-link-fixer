@@ -25,6 +25,7 @@ import {
   TEMPLATE_DEFAULT,
   type VoucherTemplate,
 } from "@/lib/voucher-template";
+import { voucherTemplatesGet, voucherTemplatesSave } from "@/lib/voucher-template.functions";
 
 export const Route = createFileRoute("/template")({
   head: () => ({
@@ -53,9 +54,17 @@ function TemplatePage() {
   const [jml, setJml] = useState("4");
 
   useEffect(() => {
-    const l = loadTemplates();
-    setList(l);
-    setAktif(l[0]?.id ?? "default");
+    let batal = false;
+    void (async () => {
+      const res = await voucherTemplatesGet();
+      const l = res.ok ? res.templates : loadTemplates();
+      if (batal) return;
+      setList(l);
+      setAktif(l[0]?.id ?? "default");
+    })();
+    return () => {
+      batal = true;
+    };
   }, []);
 
   const t = list.find((x) => x.id === aktif) ?? list[0] ?? TEMPLATE_DEFAULT;
@@ -63,21 +72,24 @@ function TemplatePage() {
   const ubah = (patch: Partial<VoucherTemplate>) =>
     setList((prev) => prev.map((x) => (x.id === t.id ? { ...x, ...patch } : x)));
 
-  const simpan = () => {
+  const simpan = async () => {
     saveTemplates(list);
-    toast.success("Template disimpan");
+    const res = await voucherTemplatesSave({ data: { templates: list } });
+    if (res.ok) toast.success("Template disimpan di server (berlaku di semua perangkat)");
+    else toast.error(res.error ?? "Gagal menyimpan ke server");
   };
 
-  const tambah = () => {
+  const tambah = async () => {
     const id = `tpl-${Date.now()}`;
     const baru = { ...TEMPLATE_DEFAULT, id, name: `template ${list.length + 1}` };
     const next = [...list, baru];
     setList(next);
     setAktif(id);
     saveTemplates(next);
+    await voucherTemplatesSave({ data: { templates: next } });
   };
 
-  const hapus = () => {
+  const hapus = async () => {
     if (list.length <= 1) {
       toast.error("Minimal satu template");
       return;
@@ -86,6 +98,7 @@ function TemplatePage() {
     setList(next);
     setAktif(next[0]?.id ?? "default");
     saveTemplates(next);
+    await voucherTemplatesSave({ data: { templates: next } });
   };
 
   const contoh = useMemo(() => {
@@ -102,10 +115,10 @@ function TemplatePage() {
         description="Rancang sendiri tampilan cetak voucher memakai kode HTML. Template dipakai saat mencetak voucher hasil generate."
         action={
           <div className="flex gap-2">
-            <Button variant="outline" onClick={tambah}>
+            <Button variant="outline" onClick={() => void tambah()}>
               <Plus className="size-4" /> Tambah
             </Button>
-            <Button onClick={simpan}>
+            <Button onClick={() => void simpan()}>
               <Save className="size-4" /> Simpan
             </Button>
           </div>
@@ -146,7 +159,12 @@ function TemplatePage() {
                   value={t.name}
                   onChange={(e) => ubah({ name: e.target.value })}
                 />
-                <Button variant="ghost" size="icon" aria-label="Hapus template" onClick={hapus}>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Hapus template"
+                  onClick={() => void hapus()}
+                >
                   <Trash2 className="size-4 text-destructive" />
                 </Button>
               </div>
