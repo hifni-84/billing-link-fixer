@@ -167,14 +167,19 @@ export function l2tpMikrotikScript(p: {
   secret: string;
 }) {
   return `# ==== L2TP/IPsec ke server billing (RouterOS v6 & v7) ====
+# Catatan: profile=default (tanpa MPPE) karena trafik sudah dienkripsi IPsec.
+# Memakai default-encryption akan gagal connect ke server Linux (noccp).
 /interface l2tp-client
 add name=l2tp-billing connect-to=${p.endpoint} user="${p.username}" password="${p.password}" \\
-    profile=default-encryption ipsec-secret="${p.psk}" use-ipsec=yes \\
-    add-default-route=no disabled=no keepalive-timeout=30
+    profile=default ipsec-secret="${p.psk}" use-ipsec=yes \\
+    add-default-route=no disabled=no keepalive-timeout=30 allow=mschap2
 
 # API supaya billing bisa kelola user & sesi
 /ip service set www disabled=no
 /ip service set api disabled=no
+
+# Pastikan paket IPsec aktif (v6): /system package print — kalau "ipsec" disabled:
+# /system package enable ipsec  lalu /system reboot
 
 /ip firewall filter
 add chain=input in-interface=l2tp-billing action=accept comment="L2TP Billing" place-before=0
@@ -389,6 +394,10 @@ export async function l2tpTestPeer(
   if (!online)
     saran.push(
       "Router belum tersambung: pastikan skrip sudah dijalankan di router, port UDP 500/4500/1701 terbuka, dan IPsec secret sama dengan PSK di panel.",
+    );
+  if (!online)
+    saran.push(
+      "RouterOS v6: pakai profile=default (bukan default-encryption) pada l2tp-client, dan pastikan paket ipsec aktif (/system package print).",
     );
   if (online && res && !res.ok)
     saran.push(
