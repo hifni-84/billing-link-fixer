@@ -36,6 +36,9 @@ export type DomainStatus = {
   sudoAllowed: boolean;
   setupCommand: string;
   options: DomainOptions;
+  publicIp: string | null;
+  suggestedDomain: string | null;
+  certs: { domain: string; installed: boolean }[];
   error: string | null;
 };
 
@@ -78,6 +81,39 @@ async function sudoAllowed() {
   }
 }
 
+/** Deteksi IP publik server (untuk saran domain gratis sslip.io). */
+export async function detectPublicIp(): Promise<string | null> {
+  const urls = ["https://api.ipify.org", "https://ifconfig.me/ip", "https://icanhazip.com"];
+  for (const url of urls) {
+    try {
+      const ctl = new AbortController();
+      const t = setTimeout(() => ctl.abort(), 6000);
+      const res = await fetch(url, { signal: ctl.signal });
+      clearTimeout(t);
+      if (!res.ok) continue;
+      const ip = (await res.text()).trim();
+      if (/^\d{1,3}(\.\d{1,3}){3}$/.test(ip)) return ip;
+    } catch {
+      // coba sumber berikutnya
+    }
+  }
+  return null;
+}
+
+/** Cek apakah sertifikat Let's Encrypt sudah terpasang untuk tiap domain. */
+async function certState(domains: string[]) {
+  return Promise.all(
+    domains.map(async (domain) => {
+      try {
+        await fs.access(`/etc/letsencrypt/live/${domain}`);
+        return { domain, installed: true };
+      } catch {
+        return { domain, installed: false };
+      }
+    }),
+  );
+}
+
 export async function domainStatus(): Promise<DomainStatus> {
   const options = await domainOptions();
   let scriptFound = false;
@@ -88,12 +124,17 @@ export async function domainStatus(): Promise<DomainStatus> {
     scriptFound = false;
   }
   const allowed = scriptFound ? await sudoAllowed() : false;
+  const publicIp = await detectPublicIp();
+  const certs = await certState(options.domains);
   return {
     ready: scriptFound && allowed,
     scriptFound,
     sudoAllowed: allowed,
     setupCommand: `sudo bash ${SUDO_HELPER}`,
     options,
+    publicIp,
+    suggestedDomain: publicIp ? `${publicIp.replace(/\./g, "-")}.sslip.io` : null,
+    certs,
     error: null,
   };
 }
