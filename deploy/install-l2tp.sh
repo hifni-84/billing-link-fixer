@@ -36,6 +36,7 @@ conn billing-l2tp
   keyexchange=ikev1
   authby=secret
   type=transport
+  forceencaps=yes
   left=%any
   leftprotoport=17/1701
   right=%any
@@ -102,6 +103,7 @@ fi
 
 echo "==> [6/6] Menjalankan service"
 systemctl enable --now strongswan-starter 2>/dev/null || systemctl enable --now strongswan 2>/dev/null || true
+ipsec restart 2>/dev/null || true
 systemctl enable --now xl2tpd
 systemctl restart xl2tpd
 
