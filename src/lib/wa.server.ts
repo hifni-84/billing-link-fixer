@@ -254,7 +254,13 @@ export async function sendInvoiceWa(invoiceId: number, phoneOverride?: string) {
   if (!phone) throw new Error(`Nomor WhatsApp untuk ${inv.username} belum diisi`);
 
   const base = await publicBaseUrl();
-  const link = `${base || ""}/portal?u=${encodeURIComponent(inv.username)}`;
+  if (!base || isLocalHost(base)) {
+    throw new Error(
+      "Alamat publik panel belum diatur, jadi link tagihan tidak bisa dibuka pelanggan. " +
+        "Isi Pengaturan > Akses Publik (domain/IP publik) atau Base URL payment gateway.",
+    );
+  }
+  const link = `${base}/portal?u=${encodeURIComponent(inv.username)}`;
   const { merchant } = parseInvoiceMerchant(await getSettings());
   const message = buildInvoiceMessage(o.template, inv, merchant, link);
 
