@@ -395,6 +395,10 @@ export async function l2tpTestPeer(
     saran.push(
       "Router belum tersambung: pastikan skrip sudah dijalankan di router, port UDP 500/4500/1701 terbuka, dan IPsec secret sama dengan PSK di panel.",
     );
+  if (!online)
+    saran.push(
+      "RouterOS v6: pakai profile=default (bukan default-encryption) pada l2tp-client, dan pastikan paket ipsec aktif (/system package print).",
+    );
   if (online && res && !res.ok)
     saran.push(
       "Tunnel tersambung tapi API gagal: aktifkan /ip service set www disabled=no dan izinkan chain=input in-interface=l2tp-billing, serta cek user/password router di Pengaturan.",
