@@ -31,9 +31,10 @@ export const waTest = createServerFn({ method: "POST" })
     try {
       const { sendWa, publicBaseUrl } = await import("./wa.server");
       const base = await publicBaseUrl();
+      const portal = base ? `${base}/portal` : "(alamat publik belum diisi di Pengaturan)";
       await sendWa(
         data.phone,
-        `Tes WhatsApp gateway billing berhasil.\nPortal pembayaran: ${base || "(alamat publik belum diisi)"}/portal`,
+        `Tes WhatsApp gateway billing berhasil.\nPortal pembayaran: ${portal}`,
       );
       return { ok: true as const, error: null as string | null };
     } catch (e) {
