@@ -366,6 +366,11 @@ function VpnPage() {
           </Table>
         </div>
       </div>
+        </TabsContent>
+        <TabsContent value="l2tp">
+          <L2tpManager />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
