@@ -50,18 +50,15 @@ function RadiusPage() {
         }
       />
 
-      <div className="panel mb-6 flex flex-wrap items-center gap-3 p-4">
+      <div className="panel mb-6 flex items-center gap-3 p-4">
         <Database className="size-5 text-primary" />
         {ping.isLoading ? (
           <span className="text-sm text-muted-foreground">Menghubungi database…</span>
         ) : dbInfo?.ok ? (
-          <span className="text-sm">
-            Terhubung ke MySQL <b>{dbInfo.version}</b> · {dbInfo.users} entri radcheck
-          </span>
+          <span className="text-sm text-emerald-500">Database aktif</span>
         ) : (
           <span className="text-sm text-destructive">
-            Database RADIUS belum siap: {(dbInfo && !dbInfo.ok ? dbInfo.error : "") || "tidak diketahui"} — jalankan{" "}
-            <code>sudo bash deploy/install-radius.sh</code> di server.
+            Database tidak aktif
           </span>
         )}
       </div>
