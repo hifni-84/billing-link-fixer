@@ -54,6 +54,7 @@ import {
   TEMPLATE_DEFAULT,
   type VoucherTemplate,
 } from "@/lib/voucher-template";
+import { voucherTemplatesGet } from "@/lib/voucher-template.functions";
 import {
   pushVouchersToAllRouters,
   removeVouchersFromAllRouters,
