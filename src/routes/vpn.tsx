@@ -5,9 +5,11 @@ import { Copy, Plus, RefreshCw, Stethoscope, Trash2, Wifi, WifiOff } from "lucid
 import { toast } from "sonner";
 
 import { PageHeader } from "@/components/Shared";
+import { L2tpManager } from "@/components/L2tpManager";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
   TableBody,
@@ -34,12 +36,13 @@ export const Route = createFileRoute("/vpn")({
       {
         name: "description",
         content:
-          "Tambahkan MikroTik dari jaringan mana pun lewat tunnel WireGuard langsung dari panel billing, tanpa perintah manual di server.",
+          "Tambahkan MikroTik dari jaringan mana pun lewat tunnel WireGuard (RouterOS v7) atau L2TP/IPsec (RouterOS v6) langsung dari panel billing.",
       },
       { property: "og:title", content: "VPN Router — NAJWA_BILLING" },
       {
         property: "og:description",
-        content: "Kelola tunnel WireGuard dan daftarkan router baru ke billing dalam satu klik.",
+        content:
+          "Kelola tunnel WireGuard & L2TP/IPsec dan daftarkan router baru ke billing dalam satu klik.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
