@@ -45,16 +45,45 @@ async function ensureLogTable() {
   waLogReady = true;
 }
 
-/** Alamat publik panel: dari pengaturan payment gateway atau Akses Publik. */
+/** Pastikan alamat selalu absolut (tanpa skema, link WhatsApp tidak bisa dibuka). */
+function normalizeBase(raw: string) {
+  const v = raw.trim().replace(/\/+$/, "");
+  if (!v) return "";
+  if (/^https?:\/\//i.test(v)) return v;
+  return `https://${v.replace(/^\/+/, "")}`;
+}
+
+function isLocalHost(url: string) {
+  return /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\])(:|\/|$)/i.test(url);
+}
+
+/** Alamat publik dari permintaan yang sedang berjalan (fallback terakhir). */
+function requestBaseUrl() {
+  try {
+    const req = getRequest();
+    const u = new URL(req.url);
+    const fwdHost = req.headers.get("x-forwarded-host");
+    const fwdProto = req.headers.get("x-forwarded-proto");
+    const host = fwdHost?.split(",")[0]?.trim() || u.host;
+    const proto = fwdProto?.split(",")[0]?.trim() || u.protocol.replace(":", "");
+    return `${proto}://${host}`;
+  } catch {
+    return "";
+  }
+}
+
+/** Alamat publik panel: dari pengaturan payment gateway, Akses Publik, atau permintaan aktif. */
 export async function publicBaseUrl() {
   const s = await getSettings();
-  const gw = (s["billing.pay.baseUrl"] ?? "").trim().replace(/\/+$/, "");
+  const gw = normalizeBase(s["billing.pay.baseUrl"] ?? "");
   if (gw) return gw;
   const host = (s["billing.public.host"] ?? "").trim();
-  if (!host) return "";
-  const port = (s["billing.public.port"] ?? "").trim();
-  const proto = s["billing.public.https"] === "1" ? "https" : "http";
-  return `${proto}://${host}${port ? `:${port}` : ""}`;
+  if (host) {
+    const port = (s["billing.public.port"] ?? "").trim();
+    const proto = s["billing.public.https"] === "1" ? "https" : "http";
+    return normalizeBase(`${proto}://${host}${port ? `:${port}` : ""}`);
+  }
+  return requestBaseUrl();
 }
 
 const tanggal = (v: string | null) =>
