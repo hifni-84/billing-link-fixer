@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/table";
 import { l2tpAdd, l2tpInfo, l2tpPeers, l2tpRemove, l2tpScript, l2tpTest } from "@/lib/l2tp.functions";
 import { useCreds } from "@/lib/router-store";
+import { wgSetEndpoint } from "@/lib/wireguard.functions";
 
 function Info({ label, value }: { label: string; value: string }) {
   return (
@@ -39,10 +40,30 @@ export function L2tpManager() {
 
   const [nama, setNama] = useState("");
   const [secret, setSecret] = useState("rahasia123");
+  const [endpointInput, setEndpointInput] = useState("");
   const [script, setScript] = useState<{ name: string; peerIp: string; text: string } | null>(null);
   const [diag, setDiag] = useState<string[] | null>(null);
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ["l2tp"] });
+
+  const simpanEndpoint = useMutation({
+    mutationFn: () => wgSetEndpoint({ data: { endpoint: endpointInput } }),
+    onSuccess: (res) => {
+      if (!res.ok) {
+        toast.error(("error" in res && res.error) || "Gagal menyimpan IP publik");
+        return;
+      }
+      toast.success(
+        endpointInput.trim()
+          ? `IP publik disetel ke ${endpointInput.trim()} — ambil ulang konfigurasi router`
+          : "IP publik kembali otomatis (deteksi server)",
+      );
+      setEndpointInput("");
+      qc.invalidateQueries({ queryKey: ["l2tp"] });
+      qc.invalidateQueries({ queryKey: ["wg"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
 
   const tambah = useMutation({
     mutationFn: () => l2tpAdd({ data: { name: nama, secret } }),
@@ -162,6 +183,35 @@ export function L2tpManager() {
             500, 4500, dan 1701 terbuka.
           </p>
         )}
+      </div>
+
+      <div className="panel mb-6 p-5">
+        <h2 className="mb-1 text-sm font-semibold">IP Publik / DNS Server VPN</h2>
+        <p className="mb-4 text-xs text-muted-foreground">
+          Deteksi otomatis bisa salah bila server punya beberapa IP. Isi IP publik atau nama domain
+          yang benar, lalu <code className="mono-num">connect-to</code> pada konfigurasi router
+          (WireGuard maupun L2TP) ikut berubah. Kosongkan lalu simpan untuk kembali otomatis.
+        </p>
+        <div className="grid gap-3 sm:grid-cols-3">
+          <div className="space-y-1.5 sm:col-span-2">
+            <Label className="text-xs">IP publik atau domain</Label>
+            <Input
+              value={endpointInput}
+              onChange={(e) => setEndpointInput(e.target.value)}
+              placeholder={d?.endpoint || "38.156.95.73"}
+            />
+          </div>
+          <div className="flex items-end">
+            <Button
+              variant="outline"
+              className="w-full"
+              disabled={simpanEndpoint.isPending}
+              onClick={() => simpanEndpoint.mutate()}
+            >
+              Simpan IP Publik
+            </Button>
+          </div>
+        </div>
       </div>
 
       <div className="panel mb-6 p-5">
