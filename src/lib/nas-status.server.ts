@@ -143,7 +143,7 @@ export async function nasStatuses(
           for (const numbers of targets) {
             const stat = await callRouterOs(rcreds, "/radius/monitor", "POST", {
               numbers,
-              once: "",
+              once: "yes",
             }).catch(() => ({ ok: false as const, data: null, error: "gagal" }));
             const raw = stat.ok
               ? ((Array.isArray(stat.data) ? stat.data[0] : stat.data) as Record<

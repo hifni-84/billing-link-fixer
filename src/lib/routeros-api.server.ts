@@ -157,18 +157,26 @@ class ApiSession {
   }
 
   /** Kirim command dan kumpulkan semua !re sampai !done / !trap. */
-  async command(words: string[]): Promise<Record<string, string>[]> {
+  async command(words: string[], timeoutMs = 10000): Promise<Record<string, string>[]> {
     this.send(words);
     const rows: Record<string, string>[] = [];
-    for (;;) {
-      const s = await this.next();
-      if (s.reply === "!re") rows.push(s.attrs);
-      else if (s.reply === "!done") {
-        if (Object.keys(s.attrs).length && !rows.length) rows.push(s.attrs);
-        return rows;
-      } else if (s.reply === "!trap" || s.reply === "!fatal") {
-        throw new Error(s.attrs["message"] || "Perintah RouterOS ditolak");
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const timeout = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => reject(new Error("Waktu perintah API RouterOS habis")), timeoutMs);
+    });
+    try {
+      for (;;) {
+        const s = await Promise.race([this.next(), timeout]);
+        if (s.reply === "!re") rows.push(s.attrs);
+        else if (s.reply === "!done") {
+          if (Object.keys(s.attrs).length && !rows.length) rows.push(s.attrs);
+          return rows;
+        } else if (s.reply === "!trap" || s.reply === "!fatal") {
+          throw new Error(s.attrs["message"] || "Perintah RouterOS ditolak");
+        }
       }
+    } finally {
+      if (timer !== undefined) clearTimeout(timer);
     }
   }
 
