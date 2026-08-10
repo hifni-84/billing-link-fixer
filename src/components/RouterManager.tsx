@@ -150,6 +150,7 @@ export function RouterManager() {
                       password: r.password,
                       port: r.port ?? 80,
                       useHttps: !!r.useHttps,
+                      ...(r.apiPort ? { apiPort: r.apiPort } : {}),
                     });
                     toast.success(`${r.name || r.host} dijadikan router aktif`);
                   }}
