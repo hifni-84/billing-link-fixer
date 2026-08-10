@@ -3,7 +3,8 @@
 #  L2TP/IPsec VPN untuk MikroTik Billing (alternatif WireGuard)
 #  Dipakai untuk MikroTik RouterOS v6 yang TIDAK mendukung WireGuard.
 #
-#  Pakai:  sudo bash deploy/install-l2tp.sh
+#  Pakai:  sudo bash deploy/install-l2tp.sh [IP_PUBLIK_ATAU_DNS]
+#  Contoh: sudo bash deploy/install-l2tp.sh 38.156.95.73
 # =====================================================================
 set -euo pipefail
 [[ $EUID -ne 0 ]] && { echo "Jalankan dengan sudo."; exit 1; }
@@ -13,6 +14,17 @@ SERVER_IP="${L2TP_NET}.1"
 RANGE_START="${L2TP_NET}.10"
 RANGE_END="${L2TP_NET}.200"
 PSK_FILE="/etc/billing-l2tp.psk"
+HOST_FILE="/etc/billing-vpn-host"
+
+# IP publik / DNS server VPN: argumen > env PUBLIC_HOST > file tersimpan
+PUBLIC_HOST="${1:-${PUBLIC_HOST:-}}"
+if [[ -z "$PUBLIC_HOST" && -f "$HOST_FILE" ]]; then
+  PUBLIC_HOST="$(tr -d '[:space:]' < "$HOST_FILE")"
+fi
+if [[ -n "$PUBLIC_HOST" ]]; then
+  printf '%s\n' "$PUBLIC_HOST" > "$HOST_FILE"
+  chmod 644 "$HOST_FILE"
+fi
 
 echo "==> [1/6] Install paket"
 export DEBIAN_FRONTEND=noninteractive
