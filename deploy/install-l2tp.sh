@@ -141,7 +141,11 @@ if ! systemctl is-active --quiet strongswan-starter && ! systemctl is-active --q
 fi
 systemctl is-active --quiet xl2tpd || { echo "ERROR: xl2tpd gagal aktif"; exit 1; }
 
-PUBLIC_HOST="${PUBLIC_HOST:-$(curl -s -4 --max-time 5 ifconfig.me || true)}"
+if [[ -z "$PUBLIC_HOST" ]]; then
+  PUBLIC_HOST="$(curl -s -4 --max-time 5 ifconfig.me || true)"
+  echo "CATATAN: IP publik dideteksi otomatis (${PUBLIC_HOST:-gagal})."
+  echo "         Jika salah, jalankan: sudo bash deploy/install-l2tp.sh 38.156.95.73"
+fi
 cat <<INFO
 
 =====================================================================
