@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { mt } from "@/lib/hotspot";
 import type { Json } from "@/lib/mikrotik-types";
-import { writeCreds } from "@/lib/router-store";
+import { readCreds, writeCreds } from "@/lib/router-store";
 import { emptyExtraRouter, saveRouters, useRouters, type ExtraRouter } from "@/lib/routers-store";
 
 type Status = { ok: boolean; text: string };
