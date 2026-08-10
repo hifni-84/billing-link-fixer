@@ -113,23 +113,38 @@ export async function nasStatuses(
             ...(c.useHttps !== undefined ? { useHttps: c.useHttps } : {}),
             ...(c.apiPort ? { apiPort: c.apiPort } : {}),
           };
-          const stat = await callRouterOs(rcreds, "/radius/monitor", "POST", {
-            numbers: "0",
-            once: "",
-          }).catch(() => ({ ok: false as const, data: null, error: "gagal" }));
-          const raw = stat.ok
-            ? ((Array.isArray(stat.data) ? stat.data[0] : stat.data) as Record<
-                string,
-                unknown
-              > | null)
-            : null;
-          if (raw) {
+          // Semua entri RADIUS di router dipantau, bukan hanya index 0 — router
+          // v6 sering punya beberapa entri (hotspot, ppp, login).
+          const list = await callRouterOs(rcreds, "/radius", "GET").catch(() => ({
+            ok: false as const,
+            data: null,
+          }));
+          const entries = (
+            list.ok && Array.isArray(list.data) ? (list.data as Record<string, unknown>[]) : []
+          ).filter((e) => !!e);
+          const ids = entries
+            .map((e) => String(e[".id"] ?? ""))
+            .filter(Boolean);
+          const targets = ids.length ? ids : ["0"];
+
+          for (const numbers of targets) {
+            const stat = await callRouterOs(rcreds, "/radius/monitor", "POST", {
+              numbers,
+              once: "",
+            }).catch(() => ({ ok: false as const, data: null, error: "gagal" }));
+            const raw = stat.ok
+              ? ((Array.isArray(stat.data) ? stat.data[0] : stat.data) as Record<
+                  string,
+                  unknown
+                > | null)
+              : null;
+            if (!raw) continue;
             const num = (k: string) => Number(raw[k] ?? 0) || 0;
             mon = {
-              requests: num("requests"),
-              accepts: num("accepts"),
-              rejects: num("rejects"),
-              timeouts: num("timeouts"),
+              requests: mon.requests + num("requests"),
+              accepts: mon.accepts + num("accepts"),
+              rejects: mon.rejects + num("rejects"),
+              timeouts: mon.timeouts + num("timeouts"),
             };
           }
         }

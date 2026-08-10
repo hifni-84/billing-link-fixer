@@ -225,6 +225,22 @@ function toCommand(path: string, method: string, body?: unknown) {
   const segments = clean.split("/").filter(Boolean);
   let id: string | undefined;
   const last = segments[segments.length - 1];
+  // Perintah RouterOS (bukan CRUD) dikirim apa adanya, mis. /radius/monitor.
+  const COMMANDS = new Set([
+    "monitor",
+    "print",
+    "reset-counters",
+    "getall",
+    "reset",
+    "ping",
+    "scan",
+  ]);
+  if (last && COMMANDS.has(last)) {
+    const attrsRaw = Object.entries((body ?? {}) as Record<string, unknown>).map(
+      ([k, v]) => `=${k}=${v === undefined || v === null ? "" : String(v)}`,
+    );
+    return { words: [clean, ...attrsRaw], single: false, id: undefined as string | undefined };
+  }
   if (last && (last.startsWith("*") || /^\d+$/.test(last))) {
     id = segments.pop();
   }
