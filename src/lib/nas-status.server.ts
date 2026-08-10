@@ -91,6 +91,7 @@ export async function nasStatuses(
             password: c.password ?? "",
             ...(c.port !== undefined ? { port: c.port } : {}),
             ...(c.useHttps !== undefined ? { useHttps: c.useHttps } : {}),
+            ...(c.apiPort ? { apiPort: c.apiPort } : {}),
           },
           "/system/identity",
           "GET",
@@ -110,6 +111,7 @@ export async function nasStatuses(
             password: c.password ?? "",
             ...(c.port !== undefined ? { port: c.port } : {}),
             ...(c.useHttps !== undefined ? { useHttps: c.useHttps } : {}),
+            ...(c.apiPort ? { apiPort: c.apiPort } : {}),
           };
           const stat = await callRouterOs(rcreds, "/radius/monitor", "POST", {
             numbers: "0",
