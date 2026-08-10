@@ -6,6 +6,7 @@ import { toast } from "sonner";
 
 import { PageHeader } from "@/components/Shared";
 import { L2tpManager } from "@/components/L2tpManager";
+import { SstpManager } from "@/components/SstpManager";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -36,13 +37,13 @@ export const Route = createFileRoute("/vpn")({
       {
         name: "description",
         content:
-          "Tambahkan MikroTik dari jaringan mana pun lewat tunnel WireGuard (RouterOS v7) atau L2TP/IPsec (RouterOS v6) langsung dari panel billing.",
+          "Tambahkan MikroTik dari jaringan mana pun lewat tunnel WireGuard (RouterOS v7), L2TP/IPsec, atau SSTP di TCP 443 (RouterOS v6) langsung dari panel billing.",
       },
       { property: "og:title", content: "VPN Router — NAJWA_BILLING" },
       {
         property: "og:description",
         content:
-          "Kelola tunnel WireGuard & L2TP/IPsec dan daftarkan router baru ke billing dalam satu klik.",
+          "Kelola tunnel WireGuard, L2TP/IPsec, dan SSTP lalu daftarkan router baru ke billing dalam satu klik.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -178,7 +179,7 @@ function VpnPage() {
     <div>
       <PageHeader
         title="VPN Router"
-        description={`Hubungkan MikroTik jauh lewat WireGuard (RouterOS v7) atau L2TP/IPsec (RouterOS v6). Router WireGuard: ${list.length}`}
+        description={`Hubungkan MikroTik jauh lewat WireGuard (v7), L2TP/IPsec, atau SSTP di TCP 443 (v6, tanpa port baru). Router WireGuard: ${list.length}`}
         action={
           <Button variant="outline" size="sm" onClick={invalidate}>
             <RefreshCw className="mr-2 size-4" /> Muat Ulang
@@ -190,6 +191,7 @@ function VpnPage() {
         <TabsList className="mb-4">
           <TabsTrigger value="wg">WireGuard (v7)</TabsTrigger>
           <TabsTrigger value="l2tp">L2TP/IPsec (v6)</TabsTrigger>
+          <TabsTrigger value="sstp">SSTP 443 (v6)</TabsTrigger>
         </TabsList>
         <TabsContent value="wg">
       <div className="panel mb-6 p-5">
@@ -369,6 +371,9 @@ function VpnPage() {
         </TabsContent>
         <TabsContent value="l2tp">
           <L2tpManager />
+        </TabsContent>
+        <TabsContent value="sstp">
+          <SstpManager />
         </TabsContent>
       </Tabs>
     </div>
