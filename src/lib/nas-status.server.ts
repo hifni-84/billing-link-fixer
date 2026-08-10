@@ -32,7 +32,6 @@ export async function nasStatuses(
   try {
     rows = await query<{ nasipaddress: string; sesi: number; terakhir: string | null }>(
       `SELECT nasipaddress,
-              MAX(COALESCE(calledstationid, '')) AS dummy_called,
               SUM(acctstoptime IS NULL) AS sesi,
               DATE_FORMAT(MAX(COALESCE(acctupdatetime, acctstarttime)), '%Y-%m-%dT%H:%i:%sZ') AS terakhir
          FROM radacct
