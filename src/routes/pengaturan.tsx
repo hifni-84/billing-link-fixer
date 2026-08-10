@@ -407,6 +407,16 @@ function PengaturanPage() {
                 onChange={(e) => setForm({ ...form, port: Number(e.target.value) || 80 })}
               />
             </div>
+            <div className="grid gap-2">
+              <Label htmlFor="apiPort">Port API RouterOS (v6)</Label>
+              <Input
+                id="apiPort"
+                inputMode="numeric"
+                placeholder="8728 (kosongkan untuk v7/REST)"
+                value={form.apiPort ? String(form.apiPort) : ""}
+                onChange={(e) => setForm({ ...form, apiPort: Number(e.target.value) || 0 })}
+              />
+            </div>
             <div className="flex items-end gap-3 pb-2">
               <Switch
                 id="ssl"
