@@ -1,6 +1,6 @@
 /**
  * Manajemen VPN SSTP dari panel billing.
- * SSTP berjalan di TCP 443 sehingga tidak butuh port-forward UDP tambahan —
+ * SSTP berjalan di TCP (default 8443) sehingga tidak butuh UDP/IPsec —
  * cocok untuk MikroTik RouterOS v6 di jaringan yang membatasi port.
  */
 import { execFile } from "node:child_process";
@@ -394,7 +394,7 @@ export async function sstpTestPeer(
     );
   if (!online)
     saran.push(
-      "RouterOS v6: pastikan verify-server-certificate=no dan connect-to memakai host + port 443.",
+      `RouterOS v6: pastikan verify-server-certificate=no dan connect-to memakai host + port ${info.port}.`,
     );
   if (online && res && !res.ok)
     saran.push(
