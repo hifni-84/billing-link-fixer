@@ -102,8 +102,8 @@ export function RouterManager() {
                   <Input
                     inputMode="numeric"
                     placeholder="8728 (kosongkan untuk v7/REST)"
-                    value={String(r.apiPort ?? "")}
-                    onChange={(e) => patch(r.id, { apiPort: Number(e.target.value) || undefined })}
+                    value={r.apiPort ? String(r.apiPort) : ""}
+                    onChange={(e) => patch(r.id, { apiPort: Number(e.target.value) || 0 })}
                   />
                 </div>
                 <div className="flex items-end gap-3 pb-2">
