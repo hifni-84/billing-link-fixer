@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 # =====================================================================
 #  SSTP VPN untuk MikroTik Billing (RouterOS v6 & v7)
-#  Jalan di TCP 443 — port yang sudah pasti terbuka (panel web memakainya),
-#  jadi TIDAK perlu minta port-forward UDP baru ke penyedia internet.
+#  Jalan di TCP (default 8443) SECARA MANDIRI — tidak menyentuh nginx
+#  maupun panel web, jadi panel tidak mungkin ikut mati.
 #
-#  Cara kerja: nginx pada 443 memakai SNI-routing (ssl_preread).
-#    - SNI = domain panel        -> panel web (127.0.0.1:8443)
-#    - SNI = vpn.<domain> / kosong -> server SSTP (127.0.0.1:1443)
+#  Pakai:  sudo bash deploy/install-sstp.sh [DOMAIN_ATAU_IP] [PORT]
+#  Contoh: sudo bash deploy/install-sstp.sh billing.hopto.org 8443
 #
-#  Pakai:  sudo bash deploy/install-sstp.sh [DOMAIN_PANEL]
-#  Contoh: sudo bash deploy/install-sstp.sh mybillingg.site
+#  Di gateway MikroTik cukup forward SATU port TCP:
+#    /ip firewall nat add chain=dstnat protocol=tcp dst-port=8443 \
+#      action=dst-nat to-addresses=<IP_LOKAL_SERVER> to-ports=8443
 # =====================================================================
 set -euo pipefail
 [[ $EUID -ne 0 ]] && { echo "Jalankan dengan sudo."; exit 1; }
@@ -17,27 +17,27 @@ set -euo pipefail
 SSTP_NET="${SSTP_NET:-10.40.40}"
 SERVER_IP="${SSTP_NET}.1"
 RANGE="${SSTP_NET}.0/24"
-SSTP_PORT=1443
-PANEL_PORT=8443
-PSK_FILE="/etc/billing-sstp.pass"     # password default (info saja)
 HOST_FILE="/etc/billing-vpn-host"
+PORT_FILE="/etc/billing-sstp-port"
+PSK_FILE="/etc/billing-sstp.pass"
 CERT_DIR="/etc/billing-sstp"
 
-PANEL_HOST="${1:-}"
-if [[ -z "$PANEL_HOST" && -f "$HOST_FILE" ]]; then
-  PANEL_HOST="$(tr -d '[:space:]' < "$HOST_FILE")"
-fi
-if [[ -z "$PANEL_HOST" ]]; then
-  PANEL_HOST="$(ls /etc/letsencrypt/live 2>/dev/null | head -1 || true)"
-fi
-[[ -n "$PANEL_HOST" ]] && { printf '%s\n' "$PANEL_HOST" > "$HOST_FILE"; chmod 644 "$HOST_FILE"; }
+VPN_HOST="${1:-}"
+SSTP_PORT="${2:-}"
+[[ -z "$VPN_HOST" && -f "$HOST_FILE" ]] && VPN_HOST="$(tr -d '[:space:]' < "$HOST_FILE")"
+[[ -z "$VPN_HOST" ]] && VPN_HOST="$(ls /etc/letsencrypt/live 2>/dev/null | head -1 || true)"
+[[ -z "$VPN_HOST" ]] && VPN_HOST="$(curl -s --max-time 5 https://api.ipify.org || true)"
+[[ -n "$VPN_HOST" ]] && { printf '%s\n' "$VPN_HOST" > "$HOST_FILE"; chmod 644 "$HOST_FILE"; }
+[[ -z "$SSTP_PORT" && -f "$PORT_FILE" ]] && SSTP_PORT="$(tr -dc '0-9' < "$PORT_FILE")"
+SSTP_PORT="${SSTP_PORT:-8443}"
+printf '%s\n' "$SSTP_PORT" > "$PORT_FILE"; chmod 644 "$PORT_FILE"
 
-echo "==> [1/6] Install paket"
+echo "==> [1/5] Install paket"
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -qq
-apt-get install -y python3-venv python3-pip ppp openssl nginx libnginx-mod-stream >/dev/null
+apt-get install -y python3-venv python3-pip ppp openssl curl >/dev/null
 
-echo "==> [2/6] Install sstp-server"
+echo "==> [2/5] Install sstp-server"
 mkdir -p /opt/billing-sstp
 if [[ ! -x /opt/billing-sstp/venv/bin/sstpd ]]; then
   python3 -m venv /opt/billing-sstp/venv
@@ -45,22 +45,22 @@ if [[ ! -x /opt/billing-sstp/venv/bin/sstpd ]]; then
   /opt/billing-sstp/venv/bin/pip install -q sstp-server
 fi
 
-echo "==> [3/6] Sertifikat TLS"
+echo "==> [3/5] Sertifikat TLS"
 mkdir -p "$CERT_DIR"; chmod 750 "$CERT_DIR"
-LE="/etc/letsencrypt/live/${PANEL_HOST}"
-if [[ -n "$PANEL_HOST" && -s "$LE/fullchain.pem" ]]; then
+LE="/etc/letsencrypt/live/${VPN_HOST}"
+if [[ -s "$LE/fullchain.pem" ]]; then
   cp -L "$LE/fullchain.pem" "$CERT_DIR/cert.pem"
   cp -L "$LE/privkey.pem"  "$CERT_DIR/key.pem"
-  echo "    memakai sertifikat Let's Encrypt ${PANEL_HOST}"
+  echo "    memakai sertifikat Let's Encrypt ${VPN_HOST}"
 elif [[ ! -s "$CERT_DIR/cert.pem" ]]; then
   openssl req -x509 -newkey rsa:2048 -nodes -days 3650 \
-    -subj "/CN=${PANEL_HOST:-billing-vpn}" \
+    -subj "/CN=${VPN_HOST:-billing-vpn}" \
     -keyout "$CERT_DIR/key.pem" -out "$CERT_DIR/cert.pem" >/dev/null 2>&1
   echo "    memakai sertifikat self-signed (MikroTik: verify-server-certificate=no)"
 fi
 chmod 600 "$CERT_DIR"/*.pem
 
-echo "==> [4/6] Konfigurasi pppd untuk SSTP"
+echo "==> [4/5] Konfigurasi pppd + service"
 cat > /etc/ppp/options.sstpd <<CFG
 name BillingSSTP
 require-mschap-v2
@@ -85,7 +85,7 @@ Description=Billing SSTP VPN Server
 After=network.target
 
 [Service]
-ExecStart=/opt/billing-sstp/venv/bin/sstpd -l 127.0.0.1 -p ${SSTP_PORT} \\
+ExecStart=/opt/billing-sstp/venv/bin/sstpd -l 0.0.0.0 -p ${SSTP_PORT} \\
   -c ${CERT_DIR}/cert.pem -k ${CERT_DIR}/key.pem \\
   --local ${SERVER_IP} --remote ${RANGE} \\
   --pppd-config /etc/ppp/options.sstpd
@@ -96,66 +96,36 @@ RestartSec=3
 WantedBy=multi-user.target
 CFG
 
-echo "==> [5/6] Routing 443 (nginx SNI) "
-# panel: pindahkan listener HTTPS ke 127.0.0.1:8443
-for f in /etc/nginx/sites-enabled/*; do
-  [[ -f "$f" ]] || continue
-  cp -n "$f" "$f.bak-sstp" 2>/dev/null || true
-  sed -i -E "s/listen\s+(\[::\]:)?443 ssl[^;]*;/listen 127.0.0.1:${PANEL_PORT} ssl;/g" "$f"
-done
-mkdir -p /etc/nginx/stream-enabled
-cat > /etc/nginx/stream-enabled/billing-sstp.conf <<CFG
-map \$ssl_preread_server_name \$billing_upstream {
-    default              127.0.0.1:${SSTP_PORT};
-    ""                   127.0.0.1:${SSTP_PORT};
-    ${PANEL_HOST:-panel.invalid}       127.0.0.1:${PANEL_PORT};
-    www.${PANEL_HOST:-panel.invalid}   127.0.0.1:${PANEL_PORT};
-}
-server {
-    listen 443;
-    listen [::]:443;
-    ssl_preread on;
-    proxy_pass \$billing_upstream;
-    proxy_timeout 1h;
-}
-CFG
-if ! grep -q 'stream-enabled' /etc/nginx/nginx.conf; then
-  printf '\nstream {\n    include /etc/nginx/stream-enabled/*.conf;\n}\n' >> /etc/nginx/nginx.conf
-fi
-if ! nginx -t 2>/tmp/nginx-sstp.err; then
-  echo "ERROR: konfigurasi nginx gagal, dikembalikan ke semula:"; cat /tmp/nginx-sstp.err
-  for f in /etc/nginx/sites-enabled/*.bak-sstp; do [[ -f "$f" ]] && mv "$f" "${f%.bak-sstp}"; done
-  rm -f /etc/nginx/stream-enabled/billing-sstp.conf
-  nginx -t && systemctl reload nginx || true
-  exit 1
-fi
-
-echo "==> [6/6] Menjalankan service"
+echo "==> [5/5] Menjalankan service"
 sed -i 's/^#\?net.ipv4.ip_forward.*/net.ipv4.ip_forward=1/' /etc/sysctl.conf
 grep -q '^net.ipv4.ip_forward=1' /etc/sysctl.conf || echo 'net.ipv4.ip_forward=1' >> /etc/sysctl.conf
 sysctl -p >/dev/null
 NIC="$(ip route show default | awk '/default/ {print $5; exit}')"
 iptables -t nat -C POSTROUTING -s "$RANGE" -o "$NIC" -j MASQUERADE 2>/dev/null \
   || iptables -t nat -A POSTROUTING -s "$RANGE" -o "$NIC" -j MASQUERADE
-command -v ufw >/dev/null && ufw allow 443/tcp >/dev/null 2>&1 || true
+command -v ufw >/dev/null && ufw allow "${SSTP_PORT}"/tcp >/dev/null 2>&1 || true
 systemctl daemon-reload
 systemctl enable billing-sstp >/dev/null
 systemctl restart billing-sstp
-systemctl reload nginx || systemctl restart nginx
 sleep 2
 systemctl is-active --quiet billing-sstp || { echo "ERROR: billing-sstp gagal aktif"; journalctl -u billing-sstp -n 30 --no-pager; exit 1; }
 
+LOCAL_IP="$(ip -4 route get 1.1.1.1 2>/dev/null | awk '{print $7; exit}')"
 cat <<INFO
 
 =====================================================================
- SSTP SIAP — jalan di TCP 443 (tanpa port-forward tambahan)
+ SSTP SIAP — TCP ${SSTP_PORT} (mandiri, panel web tidak diubah)
 =====================================================================
- Host VPN     : ${PANEL_HOST:-IP_PUBLIK_SERVER}
+ Host VPN     : ${VPN_HOST:-IP_PUBLIK_SERVER}
+ Port         : ${SSTP_PORT}
  IP server    : ${SERVER_IP}   (dipakai sebagai IP RADIUS)
  IP router    : ${SSTP_NET}.2 - ${SSTP_NET}.200
- Panel web    : tetap di https://${PANEL_HOST:-IP_PUBLIK_SERVER} (internal 8443)
 
- Tambahkan router dari panel: menu VPN Router -> tab SSTP (443)
+ Forward di gateway MikroTik (sekali saja):
+   /ip firewall nat add chain=dstnat protocol=tcp dst-port=${SSTP_PORT} \\
+     action=dst-nat to-addresses=${LOCAL_IP:-IP_LOKAL_SERVER} to-ports=${SSTP_PORT}
+
+ Tambahkan router dari panel: menu VPN Router -> tab SSTP
  Agar panel bisa mengelola user: sudo bash deploy/allow-sstp-sudo.sh
 =====================================================================
 INFO
