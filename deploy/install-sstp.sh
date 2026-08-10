@@ -89,6 +89,9 @@ refuse-mschap
 nologfd
 nodefaultroute
 noccp
+nomppe
+novj
+noipx
 mtu 1400
 mru 1400
 proxyarp
