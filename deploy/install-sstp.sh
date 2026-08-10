@@ -102,7 +102,6 @@ for f in /etc/nginx/sites-enabled/*; do
   [[ -f "$f" ]] || continue
   cp -n "$f" "$f.bak-sstp" 2>/dev/null || true
   sed -i -E "s/listen\s+(\[::\]:)?443 ssl[^;]*;/listen 127.0.0.1:${PANEL_PORT} ssl;/g" "$f"
-  sed -i -E "/listen\s+127.0.0.1:${PANEL_PORT} ssl;/{x;/./d;x;h}" "$f" 2>/dev/null || true
 done
 mkdir -p /etc/nginx/stream-enabled
 cat > /etc/nginx/stream-enabled/billing-sstp.conf <<CFG
