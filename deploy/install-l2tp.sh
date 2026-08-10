@@ -17,7 +17,7 @@ PSK_FILE="/etc/billing-l2tp.psk"
 echo "==> [1/6] Install paket"
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -qq
-apt-get install -y strongswan strongswan-pki xl2tpd ppp iptables >/dev/null
+apt-get install -y strongswan strongswan-pki xl2tpd ppp iptables tcpdump >/dev/null
 
 echo "==> [2/6] Menyiapkan PSK"
 if [[ ! -f "$PSK_FILE" ]]; then
@@ -29,7 +29,7 @@ PSK="$(cat "$PSK_FILE")"
 echo "==> [3/6] Konfigurasi IPsec (strongSwan)"
 cat > /etc/ipsec.conf <<CFG
 config setup
-  charondebug="ike 1, knl 1, cfg 0"
+  charondebug="ike 2, knl 1, cfg 1, net 1"
   uniqueids=no
 
 conn billing-l2tp
@@ -37,9 +37,13 @@ conn billing-l2tp
   authby=secret
   type=transport
   forceencaps=yes
+  fragmentation=yes
+  rekey=no
   left=%any
+  leftid=%any
   leftprotoport=17/1701
   right=%any
+  rightid=%any
   rightprotoport=17/%any
   ike=aes256-sha1-modp1024,aes128-sha1-modp1024,3des-sha1-modp1024!
   esp=aes256-sha1,aes128-sha1,3des-sha1!
@@ -70,6 +74,7 @@ length bit = yes
 CFG
 
 cat > /etc/ppp/options.xl2tpd <<CFG
+name BillingL2TP
 ipcp-accept-local
 ipcp-accept-remote
 require-mschap-v2
@@ -100,12 +105,29 @@ if command -v ufw >/dev/null; then
   ufw allow 4500/udp >/dev/null 2>&1 || true
   ufw allow 1701/udp >/dev/null 2>&1 || true
 fi
+iptables -C INPUT -p udp --dport 500 -j ACCEPT 2>/dev/null || iptables -I INPUT 1 -p udp --dport 500 -j ACCEPT
+iptables -C INPUT -p udp --dport 4500 -j ACCEPT 2>/dev/null || iptables -I INPUT 1 -p udp --dport 4500 -j ACCEPT
+iptables -C INPUT -p udp --dport 1701 -m policy --dir in --pol ipsec -j ACCEPT 2>/dev/null \
+  || iptables -I INPUT 1 -p udp --dport 1701 -m policy --dir in --pol ipsec -j ACCEPT
 
 echo "==> [6/6] Menjalankan service"
-systemctl enable --now strongswan-starter 2>/dev/null || systemctl enable --now strongswan 2>/dev/null || true
-ipsec restart 2>/dev/null || true
-systemctl enable --now xl2tpd
+pkill -x charon 2>/dev/null || true
+if systemctl list-unit-files strongswan-starter.service >/dev/null 2>&1; then
+  systemctl enable strongswan-starter
+  systemctl restart strongswan-starter
+else
+  systemctl enable strongswan
+  systemctl restart strongswan
+fi
+systemctl enable xl2tpd
 systemctl restart xl2tpd
+sleep 3
+if ! systemctl is-active --quiet strongswan-starter && ! systemctl is-active --quiet strongswan; then
+  echo "ERROR: service IPsec gagal aktif"
+  journalctl -u strongswan-starter -n 30 --no-pager || true
+  exit 1
+fi
+systemctl is-active --quiet xl2tpd || { echo "ERROR: xl2tpd gagal aktif"; exit 1; }
 
 PUBLIC_HOST="${PUBLIC_HOST:-$(curl -s -4 --max-time 5 ifconfig.me || true)}"
 cat <<INFO
@@ -120,5 +142,8 @@ cat <<INFO
 
  Tambahkan router dari panel billing:  menu VPN Router -> tab L2TP/IPsec
  Agar panel bisa mengelola user: sudo bash deploy/allow-l2tp-sudo.sh
+
+ PENTING jika server memakai IP lokal/NAT:
+ forward UDP 500, 4500, dan 1701 dari router gateway ke IP server ini.
 =====================================================================
 INFO

@@ -14,7 +14,7 @@ const exec = promisify(execFile);
 const L2TP_NET = process.env["L2TP_NET"] ?? "10.30.30";
 const CHAP = "/etc/ppp/chap-secrets";
 const PSK_FILE = "/etc/billing-l2tp.psk";
-const PPP_NAME = "l2tpd";
+const PPP_NAME = "*";
 
 export type L2tpPeer = {
   id: number;
@@ -169,8 +169,10 @@ export function l2tpMikrotikScript(p: {
   return `# ==== L2TP/IPsec ke server billing (RouterOS v6 & v7) ====
 # Catatan: profile=default (tanpa MPPE) karena trafik sudah dienkripsi IPsec.
 # Memakai default-encryption akan gagal connect ke server Linux (noccp).
+# Hapus konfigurasi lama agar skrip aman dijalankan ulang.
+/interface l2tp-client remove [find name="l2tp-billing"]
 /interface l2tp-client
-add name=l2tp-billing connect-to=${p.endpoint} user="${p.username}" password="${p.password}" \\
+add name=l2tp-billing connect-to="${p.endpoint}" user="${p.username}" password="${p.password}" \\
     profile=default ipsec-secret="${p.psk}" use-ipsec=yes \\
     add-default-route=no disabled=no keepalive-timeout=30 allow=mschap2
 
@@ -182,10 +184,12 @@ add name=l2tp-billing connect-to=${p.endpoint} user="${p.username}" password="${
 # /system package enable ipsec  lalu /system reboot
 
 /ip firewall filter
+remove [find comment="L2TP Billing"]
 add chain=input in-interface=l2tp-billing action=accept comment="L2TP Billing" place-before=0
 
 /radius
-add address=${p.serverIp} secret=${p.secret} service=hotspot,ppp timeout=3s
+remove [find comment="L2TP Billing"]
+add address=${p.serverIp} secret=${p.secret} service=hotspot,ppp timeout=3s comment="L2TP Billing"
 /ip hotspot profile set [find] use-radius=yes
 /ppp aaa set use-radius=yes
 
@@ -393,7 +397,7 @@ export async function l2tpTestPeer(
     saran.push(`User ${p.username} belum ada di ${CHAP} — hapus lalu tambah ulang router ini.`);
   if (!online)
     saran.push(
-      "Router belum tersambung: pastikan skrip sudah dijalankan di router, port UDP 500/4500/1701 terbuka, dan IPsec secret sama dengan PSK di panel.",
+      "Router belum tersambung: jalankan ulang Config terbaru. Jika server berada di belakang NAT, forward UDP 500, 4500, dan 1701 pada gateway menuju IP lokal server; membuka UFW saja tidak cukup.",
     );
   if (!online)
     saran.push(
