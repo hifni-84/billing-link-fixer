@@ -146,6 +146,14 @@ export async function l2tpServerInfo(): Promise<L2tpServerInfo> {
   }
   if (!info.endpoint) {
     try {
+      const saved = (await readFileSafe("/etc/billing-vpn-host")).trim();
+      if (saved) info.endpoint = saved;
+    } catch {
+      /* abaikan */
+    }
+  }
+  if (!info.endpoint) {
+    try {
       const res = await fetch("https://api.ipify.org", { signal: AbortSignal.timeout(4000) });
       info.endpoint = (await res.text()).trim();
     } catch {
