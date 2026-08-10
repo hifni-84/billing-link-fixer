@@ -880,6 +880,23 @@ export async function listNas(): Promise<import("./radius-types").RadiusNas[]> {
   );
 }
 
+/**
+ * FreeRADIUS membaca daftar client (NAS) sekali saat start. Setelah NAS
+ * ditambah / diubah / dihapus, daftar itu harus dimuat ulang supaya SEMUA NAS
+ * (2, 3, dst) bisa aktif bersamaan dengan secret masing-masing.
+ */
+export async function reloadRadiusClients(): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const { execFile } = await import("node:child_process");
+    const { promisify } = await import("node:util");
+    const exec = promisify(execFile);
+    await exec("sudo", ["-n", "systemctl", "reload-or-restart", "freeradius"], { timeout: 20000 });
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "gagal reload freeradius" };
+  }
+}
+
 export async function saveNas(n: {
   id?: number;
   nasname: string;
@@ -902,12 +919,14 @@ export async function saveNas(n: {
       [n.nasname, n.shortname, n.secret, n.description, tz],
     );
   }
-  return { ok: true };
+  const reload = await reloadRadiusClients();
+  return { ok: true, reloaded: reload.ok, reloadError: reload.error ?? null };
 }
 
 export async function deleteNas(id: number) {
   await query("DELETE FROM nas WHERE id = ?", [id]);
-  return { ok: true };
+  const reload = await reloadRadiusClients();
+  return { ok: true, reloaded: reload.ok, reloadError: reload.error ?? null };
 }
 
 /* --------------------------- PENGATURAN GLOBAL --------------------------- */
