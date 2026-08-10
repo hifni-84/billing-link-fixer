@@ -101,7 +101,7 @@ export async function sstpServerInfo(): Promise<SstpServerInfo> {
     network: `${SSTP_NET}.0/24`,
     serverIp: `${SSTP_NET}.1`,
     endpoint: "",
-    port: 443,
+    port: 8443,
     serviceUp: false,
     writable: false,
     error: null,
@@ -112,6 +112,14 @@ export async function sstpServerInfo(): Promise<SstpServerInfo> {
     info.ready = true;
   } catch (e) {
     info.error = e instanceof Error ? e.message : "Server SSTP belum disiapkan";
+  }
+
+  try {
+    const raw = await readFileSafe("/etc/billing-sstp-port");
+    const p = parseInt(raw.replace(/[^0-9]/g, ""), 10);
+    if (Number.isFinite(p) && p > 0) info.port = p;
+  } catch {
+    /* pakai default */
   }
 
   try {
