@@ -1,16 +1,11 @@
-import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Copy, Plus, RefreshCw, Stethoscope, Trash2, Wifi, WifiOff } from "lucide-react";
 import { toast } from "sonner";
 
-import { PageHeader } from "@/components/Shared";
-import { L2tpManager } from "@/components/L2tpManager";
-import { SstpManager } from "@/components/SstpManager";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
   TableBody,
@@ -19,85 +14,38 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  wgAdd,
-  wgInfo,
-  wgPeers,
-  wgRemove,
-  wgScript,
-  wgSetEndpoint,
-  wgTest,
-} from "@/lib/wireguard.functions";
+import { sstpAdd, sstpInfo, sstpPeers, sstpRemove, sstpScript, sstpTest } from "@/lib/sstp.functions";
 import { useCreds } from "@/lib/router-store";
 
-export const Route = createFileRoute("/vpn")({
-  head: () => ({
-    meta: [
-      { title: "VPN Router — NAJWA_BILLING" },
-      {
-        name: "description",
-        content:
-          "Tambahkan MikroTik dari jaringan mana pun lewat tunnel WireGuard (RouterOS v7), L2TP/IPsec, atau SSTP di TCP 443 (RouterOS v6) langsung dari panel billing.",
-      },
-      { property: "og:title", content: "VPN Router — NAJWA_BILLING" },
-      {
-        property: "og:description",
-        content:
-          "Kelola tunnel WireGuard, L2TP/IPsec, dan SSTP lalu daftarkan router baru ke billing dalam satu klik.",
-      },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
-    ],
-  }),
-  component: VpnPage,
-});
-
-function waktuHandshake(sec: number) {
-  if (!sec) return "belum pernah";
-  const detik = Math.max(0, Math.floor(Date.now() / 1000) - sec);
-  if (detik < 60) return `${detik} detik lalu`;
-  if (detik < 3600) return `${Math.floor(detik / 60)} menit lalu`;
-  return `${Math.floor(detik / 3600)} jam lalu`;
+function Info({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-md border border-border/60 p-3">
+      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</p>
+      <p className="mono-num truncate text-sm">{value}</p>
+    </div>
+  );
 }
 
-function VpnPage() {
+/** SSTP di TCP 443 — alternatif paling mudah bila UDP VPN diblokir penyedia. */
+export function SstpManager() {
   const qc = useQueryClient();
   const { creds } = useCreds();
-  const info = useQuery({ queryKey: ["wg", "info"], queryFn: () => wgInfo() });
+  const info = useQuery({ queryKey: ["sstp", "info"], queryFn: () => sstpInfo() });
   const peers = useQuery({
-    queryKey: ["wg", "peers"],
-    queryFn: () => wgPeers(),
+    queryKey: ["sstp", "peers"],
+    queryFn: () => sstpPeers(),
     refetchInterval: 20000,
   });
 
   const [nama, setNama] = useState("");
   const [secret, setSecret] = useState("rahasia123");
-  const [endpointInput, setEndpointInput] = useState("");
   const [script, setScript] = useState<{ name: string; peerIp: string; text: string } | null>(null);
   const [diag, setDiag] = useState<string[] | null>(null);
 
-  const invalidate = () => qc.invalidateQueries({ queryKey: ["wg"] });
-
-  const simpanEndpoint = useMutation({
-    mutationFn: () => wgSetEndpoint({ data: { endpoint: endpointInput } }),
-    onSuccess: (res) => {
-      if (!res.ok) {
-        toast.error(("error" in res && res.error) || "Gagal menyimpan endpoint");
-        return;
-      }
-      setScript(null);
-      toast.success(
-        endpointInput.trim()
-          ? `Endpoint disetel ke ${endpointInput.trim()} — ambil ulang Config router`
-          : "Endpoint kembali otomatis",
-      );
-      invalidate();
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
+  const invalidate = () => qc.invalidateQueries({ queryKey: ["sstp"] });
 
   const tambah = useMutation({
-    mutationFn: () => wgAdd({ data: { name: nama, secret } }),
+    mutationFn: () => sstpAdd({ data: { name: nama, secret } }),
     onSuccess: (res) => {
       if (!res.ok) {
         toast.error(res.error ?? "Gagal menambah router");
@@ -108,7 +56,7 @@ function VpnPage() {
       toast.success(
         res.applied
           ? `Router ${res.name} ditambahkan (${res.peerIp})`
-          : `Router ${res.name} tersimpan (${res.peerIp}) — tunnel belum aktif: ${res.applyError ?? ""}`,
+          : `Router ${res.name} tersimpan (${res.peerIp}) — user VPN belum tertulis: ${res.applyError ?? ""}`,
       );
       invalidate();
     },
@@ -116,7 +64,7 @@ function VpnPage() {
   });
 
   const lihatScript = useMutation({
-    mutationFn: (id: number) => wgScript({ data: { id } }),
+    mutationFn: (id: number) => sstpScript({ data: { id } }),
     onSuccess: (res) => {
       if (!res.ok) {
         toast.error(res.error ?? "Gagal mengambil konfigurasi");
@@ -127,17 +75,17 @@ function VpnPage() {
   });
 
   const hapus = useMutation({
-    mutationFn: (id: number) => wgRemove({ data: { id } }),
+    mutationFn: (id: number) => sstpRemove({ data: { id } }),
     onSuccess: () => {
       setScript(null);
-      toast.success("Router dihapus dari tunnel");
+      toast.success("Router dihapus dari VPN SSTP");
       invalidate();
     },
   });
 
   const tes = useMutation({
     mutationFn: (id: number) =>
-      wgTest({
+      sstpTest({
         data: {
           id,
           creds: {
@@ -153,15 +101,14 @@ function VpnPage() {
         toast.error(res.error ?? "Gagal menguji");
         return;
       }
-      const baris = [
+      setDiag([
         `Router: ${res.name} (${res.peerIp})`,
-        `Peer terdaftar di server: ${res.inConf ? "ya" : "tidak"}`,
-        `Handshake tunnel: ${res.lastHandshake ? waktuHandshake(res.lastHandshake) : "belum pernah"}`,
-        `REST API router: ${res.api ? "terhubung" : `gagal — ${res.apiError ?? "-"}`}`,
+        `User VPN terdaftar di server: ${res.inChap ? "ya" : "tidak"}`,
+        `Tunnel: ${res.online ? "tersambung" : "belum tersambung"}`,
+        `API router: ${res.api ? "terhubung" : `gagal — ${res.apiError ?? "-"}`}`,
         ...res.saran.map((s) => `• ${s}`),
-      ];
-      setDiag(baris);
-      if (res.api && res.lastHandshake) toast.success("Router kedua terhubung penuh");
+      ]);
+      if (res.api && res.online) toast.success("Router terhubung penuh via SSTP");
       else toast.warning("Belum terhubung — lihat hasil diagnosa");
     },
     onError: (e: Error) => toast.error(e.message),
@@ -177,91 +124,58 @@ function VpnPage() {
 
   return (
     <div>
-      <PageHeader
-        title="VPN Router"
-        description={`Hubungkan MikroTik jauh lewat WireGuard (v7), L2TP/IPsec, atau SSTP di TCP 443 (v6, tanpa port baru). Router WireGuard: ${list.length}`}
-        action={
+      <div className="panel mb-6 p-5">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-sm font-semibold">Status Server SSTP (TCP 443)</h2>
           <Button variant="outline" size="sm" onClick={invalidate}>
             <RefreshCw className="mr-2 size-4" /> Muat Ulang
           </Button>
-        }
-      />
-
-      <Tabs defaultValue="wg">
-        <TabsList className="mb-4">
-          <TabsTrigger value="wg">WireGuard (v7)</TabsTrigger>
-          <TabsTrigger value="l2tp">L2TP/IPsec (v6)</TabsTrigger>
-          <TabsTrigger value="sstp">SSTP 443 (v6)</TabsTrigger>
-        </TabsList>
-        <TabsContent value="wg">
-      <div className="panel mb-6 p-5">
-        <h2 className="mb-3 text-sm font-semibold">Status Server Tunnel</h2>
+        </div>
+        <p className="mb-3 text-xs text-muted-foreground">
+          SSTP memakai TCP 443 — port yang sudah dipakai panel web, jadi tidak perlu minta
+          port-forward UDP baru ke penyedia internet. Didukung MikroTik RouterOS v6 maupun v7.
+        </p>
         <div className="grid gap-3 text-xs sm:grid-cols-2 lg:grid-cols-4">
-          <Info label="Interface" value={d?.iface ?? "-"} />
           <Info label="Jaringan tunnel" value={d?.network ?? "-"} />
           <Info label="IP server (RADIUS)" value={d?.serverIp ?? "-"} />
-          <Info label="Endpoint" value={d ? `${d.endpoint}:${d.listenPort}` : "-"} />
+          <Info label="Host VPN" value={d?.endpoint || "-"} />
+          <Info label="Port" value={String(d?.port ?? 443)} />
         </div>
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <span
             className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${
-              d?.up ? "bg-primary/15 text-primary" : "bg-destructive/15 text-destructive"
+              d?.serviceUp ? "bg-primary/15 text-primary" : "bg-destructive/15 text-destructive"
             }`}
           >
-            {d?.up ? <Wifi className="size-3" /> : <WifiOff className="size-3" />}
-            {d?.up ? "Tunnel aktif" : "Tunnel tidak aktif"}
+            {d?.serviceUp ? <Wifi className="size-3" /> : <WifiOff className="size-3" />}
+            {d?.serviceUp ? "Server SSTP aktif" : "Server SSTP tidak aktif"}
           </span>
           {d?.error && <span className="text-[11px] text-destructive">{d.error}</span>}
         </div>
         {!d?.ready && (
           <p className="mt-3 rounded-md bg-muted/50 p-3 text-[11px] leading-relaxed text-muted-foreground">
-            Server WireGuard belum disiapkan. Cukup sekali saja di server jalankan:{" "}
-            <code className="mono-num">sudo bash deploy/install-wireguard.sh</code> lalu{" "}
-            <code className="mono-num">sudo bash deploy/allow-wg-sudo.sh</code>. Setelah itu semua
-            router berikutnya bisa ditambahkan dari halaman ini.
+            Server SSTP belum disiapkan. Cukup sekali saja di server jalankan:{" "}
+            <code className="mono-num">sudo bash deploy/install-sstp.sh</code> lalu{" "}
+            <code className="mono-num">sudo bash deploy/allow-sstp-sudo.sh</code>. Panel web tetap
+            bisa dibuka seperti biasa.
           </p>
         )}
-
-        <div className="mt-4 border-t border-border/60 pt-4">
-          <Label className="text-xs">Endpoint manual (IP publik / DDNS server)</Label>
-          <p className="mb-2 mt-1 text-[11px] leading-relaxed text-muted-foreground">
-            Deteksi otomatis bisa salah kalau server di balik NAT/proxy. Isi IP publik atau DDNS
-            yang benar (contoh <code className="mono-num">38.156.95.73</code> atau{" "}
-            <code className="mono-num">najwa.ddns.net</code>), lalu ambil ulang Config router agar{" "}
-            <code className="mono-num">endpoint-address</code> ikut berubah. Kosongkan untuk kembali
-            otomatis.
-          </p>
-          <div className="flex flex-wrap gap-2">
-            <Input
-              className="max-w-xs"
-              value={endpointInput}
-              onChange={(e) => setEndpointInput(e.target.value)}
-              placeholder={d?.endpoint ?? "38.156.95.73"}
-            />
-            <Button
-              variant="outline"
-              disabled={simpanEndpoint.isPending}
-              onClick={() => simpanEndpoint.mutate()}
-            >
-              Simpan Endpoint
-            </Button>
-          </div>
-        </div>
+        <p className="mt-3 text-[11px] text-muted-foreground">
+          IP publik / domain diambil dari pengaturan yang sama dengan WireGuard &amp; L2TP (tab
+          L2TP/IPsec → IP Publik / DNS Server VPN).
+        </p>
       </div>
 
       <div className="panel mb-6 p-5">
-        <h2 className="mb-1 text-sm font-semibold">Tambah Router</h2>
+        <h2 className="mb-1 text-sm font-semibold">Tambah Router (SSTP)</h2>
         <p className="mb-4 text-xs text-muted-foreground">
-          IP tunnel & kunci dibuat otomatis, router langsung didaftarkan sebagai NAS RADIUS.
+          User, password, dan IP tunnel dibuat otomatis; router langsung didaftarkan sebagai NAS
+          RADIUS.
         </p>
         <div className="grid gap-3 sm:grid-cols-3">
           <div className="space-y-1.5">
             <Label className="text-xs">Nama router</Label>
-            <Input
-              value={nama}
-              onChange={(e) => setNama(e.target.value)}
-              placeholder="router2"
-            />
+            <Input value={nama} onChange={(e) => setNama(e.target.value)} placeholder="router-v6" />
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs">Secret RADIUS</Label>
@@ -273,7 +187,7 @@ function VpnPage() {
               disabled={!nama.trim() || tambah.isPending}
               onClick={() => tambah.mutate()}
             >
-              <Plus className="mr-2 size-4" /> Tambah & Buat Konfigurasi
+              <Plus className="mr-2 size-4" /> Tambah &amp; Buat Konfigurasi
             </Button>
           </div>
         </div>
@@ -316,15 +230,16 @@ function VpnPage() {
               <TableRow>
                 <TableHead>Nama</TableHead>
                 <TableHead>IP Tunnel</TableHead>
-                <TableHead>Handshake</TableHead>
+                <TableHead>User VPN</TableHead>
+                <TableHead>Status</TableHead>
                 <TableHead className="text-right">Aksi</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {list.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center text-xs text-muted-foreground">
-                    {peers.data?.error ?? "Belum ada router di tunnel"}
+                  <TableCell colSpan={5} className="text-center text-xs text-muted-foreground">
+                    {peers.data?.error ?? "Belum ada router SSTP"}
                   </TableCell>
                 </TableRow>
               )}
@@ -332,8 +247,9 @@ function VpnPage() {
                 <TableRow key={p.id}>
                   <TableCell className="font-medium">{p.name}</TableCell>
                   <TableCell className="mono-num">{p.peerIp}</TableCell>
+                  <TableCell className="mono-num text-xs">{p.username}</TableCell>
                   <TableCell className="text-xs text-muted-foreground">
-                    {waktuHandshake(p.lastHandshake)}
+                    {p.online ? "tersambung" : "belum tersambung"}
                   </TableCell>
                   <TableCell className="text-right">
                     <Button
@@ -368,23 +284,6 @@ function VpnPage() {
           </Table>
         </div>
       </div>
-        </TabsContent>
-        <TabsContent value="l2tp">
-          <L2tpManager />
-        </TabsContent>
-        <TabsContent value="sstp">
-          <SstpManager />
-        </TabsContent>
-      </Tabs>
-    </div>
-  );
-}
-
-function Info({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-md border border-border/60 p-3">
-      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</p>
-      <p className="mono-num truncate text-sm">{value}</p>
     </div>
   );
 }
