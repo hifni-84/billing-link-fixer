@@ -14,6 +14,8 @@ export type NasStatus = {
   radiusAccepts: number;
   radiusRejects: number;
   radiusTimeouts: number;
+  /** router mempunyai entri RADIUS aktif untuk hotspot/PPP */
+  radiusConfigured: boolean;
   /** REST API router bisa dihubungi dengan kredensial panel */
   api: boolean;
   apiError: string | null;
@@ -76,6 +78,7 @@ export async function nasStatuses(
       let apiError: string | null = null;
       let identity: string | null = null;
       let mon = { requests: 0, accepts: 0, rejects: 0, timeouts: 0 };
+      let radiusConfigured = false;
 
       // Kredensial khusus per NAS (router ke-2 dan seterusnya), jatuh ke kredensial aktif.
       const perHost = (routers ?? []).find(
@@ -122,6 +125,16 @@ export async function nasStatuses(
           const entries = (
             list.ok && Array.isArray(list.data) ? (list.data as Record<string, unknown>[]) : []
           ).filter((e) => !!e);
+          // RouterOS v6 tidak selalu mengembalikan counter dari /radius/monitor.
+          // Entri RADIUS aktif tetap menjadi bukti konfigurasi siap ketika API
+          // router dapat dijangkau melalui tunnel SSTP/L2TP/WireGuard.
+          radiusConfigured = entries.some((e) => {
+            // API RouterOS v6 bisa tidak mengirim properti service pada hasil
+            // /radius/print. Selama entri tidak disabled, konfigurasi tersebut
+            // valid; service sudah ditentukan saat entri dibuat di MikroTik.
+            const disabled = String(e["disabled"] ?? "false").trim().toLowerCase();
+            return disabled !== "true" && disabled !== "yes";
+          });
           const ids = entries
             .map((e) => String(e[".id"] ?? ""))
             .filter(Boolean);
@@ -130,7 +143,7 @@ export async function nasStatuses(
           for (const numbers of targets) {
             const stat = await callRouterOs(rcreds, "/radius/monitor", "POST", {
               numbers,
-              once: "",
+              once: "yes",
             }).catch(() => ({ ok: false as const, data: null, error: "gagal" }));
             const raw = stat.ok
               ? ((Array.isArray(stat.data) ? stat.data[0] : stat.data) as Record<
@@ -160,13 +173,15 @@ export async function nasStatuses(
           fresh ||
           Number(r?.sesi ?? 0) > 0 ||
           mon.accepts > 0 ||
-          (mon.requests > 0 && mon.requests > mon.timeouts),
+          (mon.requests > 0 && mon.requests > mon.timeouts) ||
+          (api && radiusConfigured),
         radiusLast: last,
         radiusSessions: Number(r?.sesi ?? 0),
         radiusRequests: mon.requests,
         radiusAccepts: mon.accepts,
         radiusRejects: mon.rejects,
         radiusTimeouts: mon.timeouts,
+        radiusConfigured,
         api,
         apiError,
         identity,

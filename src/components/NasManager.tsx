@@ -196,6 +196,8 @@ export function NasManager() {
                           ? `Aktivitas terakhir: ${new Date(st.radiusLast).toLocaleString()} · ${st.radiusSessions} sesi aktif`
                           : st && st.radiusRequests > 0
                             ? `Router mengirim ${st.radiusRequests} request RADIUS (accept ${st.radiusAccepts}, reject ${st.radiusRejects}, timeout ${st.radiusTimeouts})`
+                            : st?.radiusConfigured && st.api
+                              ? "Entri RADIUS hotspot/PPP aktif dan router dapat dijangkau"
                             : "Belum ada aktivitas RADIUS dari NAS ini"
                       }
                     />
