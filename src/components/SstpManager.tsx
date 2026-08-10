@@ -126,20 +126,22 @@ export function SstpManager() {
     <div>
       <div className="panel mb-6 p-5">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-sm font-semibold">Status Server SSTP (TCP 443)</h2>
+          <h2 className="text-sm font-semibold">
+            Status Server SSTP (TCP {d?.port ?? 8443})
+          </h2>
           <Button variant="outline" size="sm" onClick={invalidate}>
             <RefreshCw className="mr-2 size-4" /> Muat Ulang
           </Button>
         </div>
         <p className="mb-3 text-xs text-muted-foreground">
-          SSTP memakai TCP 443 — port yang sudah dipakai panel web, jadi tidak perlu minta
-          port-forward UDP baru ke penyedia internet. Didukung MikroTik RouterOS v6 maupun v7.
+          SSTP memakai TCP (bukan UDP), jadi lolos dari pembatasan UDP/IPsec penyedia internet.
+          Cukup satu port TCP yang di-forward ke server ini. Didukung MikroTik RouterOS v6 maupun v7.
         </p>
         <div className="grid gap-3 text-xs sm:grid-cols-2 lg:grid-cols-4">
           <Info label="Jaringan tunnel" value={d?.network ?? "-"} />
           <Info label="IP server (RADIUS)" value={d?.serverIp ?? "-"} />
           <Info label="Host VPN" value={d?.endpoint || "-"} />
-          <Info label="Port" value={String(d?.port ?? 443)} />
+          <Info label="Port" value={String(d?.port ?? 8443)} />
         </div>
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <span
