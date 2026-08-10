@@ -60,6 +60,11 @@ export function RouterManager() {
         <code>www-ssl</code>). Isi port API sesuai setelan router, misal 8525, 8728, 80, atau 443
         untuk HTTPS.
       </p>
+      <p className="mb-4 text-xs text-muted-foreground">
+        RouterOS v6 tidak punya REST API. Untuk v6, isi <b>Port API RouterOS (v6)</b> dengan{" "}
+        <code>8728</code> dan aktifkan service <code>api</code> di router (
+        <code>/ip service enable api</code>).
+      </p>
 
       <div className="grid gap-5">
         {list.map((r) => {
@@ -90,6 +95,15 @@ export function RouterManager() {
                     placeholder="8525"
                     value={String(r.port ?? "")}
                     onChange={(e) => patch(r.id, { port: Number(e.target.value) || 0 })}
+                  />
+                </div>
+                <div className="grid min-w-0 gap-2">
+                  <Label>Port API RouterOS (v6)</Label>
+                  <Input
+                    inputMode="numeric"
+                    placeholder="8728 (kosongkan untuk v7/REST)"
+                    value={r.apiPort ? String(r.apiPort) : ""}
+                    onChange={(e) => patch(r.id, { apiPort: Number(e.target.value) || 0 })}
                   />
                 </div>
                 <div className="flex items-end gap-3 pb-2">

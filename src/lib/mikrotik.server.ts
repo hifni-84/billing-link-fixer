@@ -1,6 +1,40 @@
 import type { Json, MtCreds, MtResult } from "./mikrotik-types";
 
+const API_PORTS = new Set([8728, 8729]);
+
+function looksLikeNoRest(res: MtResult) {
+  if (res.status === 404 || res.status === 501 || res.status === 400) return true;
+  if (res.status === 0) return true;
+  return typeof res.data === "string" && res.data.toLowerCase().includes("<html");
+}
+
 export async function callRouterOs(
+  creds: MtCreds,
+  path: string,
+  method: string,
+  body?: unknown,
+): Promise<MtResult> {
+  // Port API biner → langsung pakai protokol API (RouterOS v6).
+  if (creds.apiPort || (creds.port && API_PORTS.has(creds.port))) {
+    const { callRouterOsApi } = await import("./routeros-api.server");
+    return callRouterOsApi(
+      { ...creds, apiPort: creds.apiPort ?? creds.port ?? 8728 },
+      path,
+      method,
+      body,
+    );
+  }
+
+  const rest = await callRouterOsRest(creds, path, method, body);
+  if (rest.ok || !looksLikeNoRest(rest)) return rest;
+
+  // REST tidak tersedia (umumnya RouterOS v6) → coba API biner 8728.
+  const { callRouterOsApi } = await import("./routeros-api.server");
+  const api = await callRouterOsApi({ ...creds, apiPort: 8728 }, path, method, body);
+  return api.ok ? api : rest.status ? rest : api;
+}
+
+async function callRouterOsRest(
   creds: MtCreds,
   path: string,
   method: string,

@@ -4,6 +4,8 @@ export type MtCreds = {
   password: string;
   port?: number;
   useHttps?: boolean;
+  /** Port API biner RouterOS (untuk RouterOS v6 yang tidak punya REST). */
+  apiPort?: number;
 };
 
 export type Json = string | number | boolean | null | Json[] | { [key: string]: Json };
