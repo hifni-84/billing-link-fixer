@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { mt } from "@/lib/hotspot";
 import type { Json } from "@/lib/mikrotik-types";
-import { writeCreds } from "@/lib/router-store";
+import { readCreds, writeCreds } from "@/lib/router-store";
 import { emptyExtraRouter, saveRouters, useRouters, type ExtraRouter } from "@/lib/routers-store";
 
 type Status = { ok: boolean; text: string };
@@ -144,12 +144,28 @@ export function RouterManager() {
                   variant="outline"
                   disabled={!r.host.trim()}
                   onClick={() => {
+                    const prev = readCreds();
+                    // Simpan router aktif sebelumnya ke daftar router tambahan
+                    // agar koneksi API-nya tidak hilang setelah ganti router aktif.
+                    if (
+                      prev.host.trim() &&
+                      prev.host.trim().toLowerCase() !== r.host.trim().toLowerCase() &&
+                      !list.some(
+                        (x) => x.host.trim().toLowerCase() === prev.host.trim().toLowerCase(),
+                      )
+                    ) {
+                      void saveRouters([
+                        ...list,
+                        { ...emptyExtraRouter(), ...prev, name: prev.host },
+                      ]);
+                    }
                     writeCreds({
                       host: r.host,
                       username: r.username,
                       password: r.password,
                       port: r.port ?? 80,
                       useHttps: !!r.useHttps,
+                      ...(r.apiPort ? { apiPort: r.apiPort } : {}),
                     });
                     toast.success(`${r.name || r.host} dijadikan router aktif`);
                   }}

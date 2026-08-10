@@ -159,6 +159,7 @@ export function useRadiusNasStatus() {
         password: r.password,
         ...(r.port !== undefined ? { port: r.port } : {}),
         ...(r.useHttps !== undefined ? { useHttps: r.useHttps } : {}),
+        ...(r.apiPort ? { apiPort: r.apiPort } : {}),
       }));
       return radiusNasStatus({
         data: {
@@ -167,6 +168,7 @@ export function useRadiusNasStatus() {
             password: c.password,
             ...(c.port !== undefined ? { port: c.port } : {}),
             ...(c.useHttps !== undefined ? { useHttps: c.useHttps } : {}),
+            ...(c.apiPort ? { apiPort: c.apiPort } : {}),
           },
           routers: [
             {
@@ -175,6 +177,7 @@ export function useRadiusNasStatus() {
               password: c.password,
               ...(c.port !== undefined ? { port: c.port } : {}),
               ...(c.useHttps !== undefined ? { useHttps: c.useHttps } : {}),
+            ...(c.apiPort ? { apiPort: c.apiPort } : {}),
             },
             ...extra,
           ],
