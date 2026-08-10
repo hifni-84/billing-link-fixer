@@ -5,6 +5,8 @@
 import mysql from "mysql2/promise";
 
 import type { RadiusPlan, RadiusSession, RadiusUser } from "./radius-types";
+import type { MtCreds } from "./mikrotik-types";
+import { callRouterOs } from "./mikrotik.server";
 
 let pool: mysql.Pool | null = null;
 
@@ -501,6 +503,98 @@ export async function report(): Promise<RadiusReport> {
 
 /* ---------------------------- PEMELIHARAAN ------------------------------ */
 
+type RouterCleanupResult = { routers: number; deleted: number; errors: string[] };
+
+function parseRouterCreds(raw: string | undefined): MtCreds[] {
+  if (!raw) return [];
+  try {
+    const value = JSON.parse(raw) as unknown;
+    const rows = Array.isArray(value) ? value : [value];
+    return rows
+      .filter((row): row is Record<string, unknown> => !!row && typeof row === "object")
+      .map((row) => ({
+        host: typeof row["host"] === "string" ? row["host"].trim() : "",
+        username: typeof row["username"] === "string" ? row["username"] : "admin",
+        password: typeof row["password"] === "string" ? row["password"] : "",
+        ...(typeof row["port"] === "number" ? { port: row["port"] } : {}),
+        ...(typeof row["useHttps"] === "boolean" ? { useHttps: row["useHttps"] } : {}),
+      }))
+      .filter((row) => row.host.length > 0);
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Hapus voucher expired langsung dari semua router tersimpan. Berjalan di
+ * server sehingga tidak bergantung pada browser/panel yang sedang terbuka.
+ */
+async function cleanupExpiredOnRouters(usernames: string[]): Promise<RouterCleanupResult> {
+  const result: RouterCleanupResult = { routers: 0, deleted: 0, errors: [] };
+  if (!usernames.length) return result;
+
+  const settings = await getSettings();
+  const routers = [
+    ...parseRouterCreds(settings["mikrotik.creds"]),
+    ...parseRouterCreds(settings["mikrotik.routers"]),
+  ];
+  const unique = new Map<string, MtCreds>();
+  for (const router of routers) {
+    const key = `${router.useHttps ? "https" : "http"}://${router.host}:${router.port ?? ""}`;
+    unique.set(key, router);
+  }
+  const wanted = new Set(usernames.map((name) => name.trim().toLowerCase()).filter(Boolean));
+
+  for (const router of unique.values()) {
+    result.routers += 1;
+    const list = async (path: string) => {
+      const response = await callRouterOs(router, path, "GET");
+      if (!response.ok) throw new Error(response.error ?? `Gagal membaca ${path}`);
+      return (Array.isArray(response.data) ? response.data : []) as Array<
+        Record<string, string>
+      >;
+    };
+    const removeMatches = async (
+      path: string,
+      rows: Array<Record<string, string>>,
+      field: string,
+    ) => {
+      for (const row of rows) {
+        const name = row[field]?.trim().toLowerCase();
+        const id = row[".id"];
+        if (!name || !id || !wanted.has(name)) continue;
+        const response = await callRouterOs(router, `${path}/${id}`, "DELETE");
+        if (!response.ok) throw new Error(response.error ?? `Gagal menghapus ${row[field]}`);
+        result.deleted += 1;
+      }
+    };
+
+    try {
+      const [hotspotActive, pppActive, cookies] = await Promise.all([
+        list("/ip/hotspot/active"),
+        list("/ppp/active").catch(() => []),
+        list("/ip/hotspot/cookie").catch(() => []),
+      ]);
+      await removeMatches("/ip/hotspot/active", hotspotActive, "user");
+      await removeMatches("/ppp/active", pppActive, "name");
+      await removeMatches("/ip/hotspot/cookie", cookies, "user");
+
+      const [hotspotUsers, pppSecrets] = await Promise.all([
+        list("/ip/hotspot/user"),
+        list("/ppp/secret").catch(() => []),
+      ]);
+      await removeMatches("/ip/hotspot/user", hotspotUsers, "name");
+      await removeMatches("/ppp/secret", pppSecrets, "name");
+    } catch (error) {
+      if (result.errors.length < 10) {
+        const message = error instanceof Error ? error.message : "Kesalahan tidak diketahui";
+        result.errors.push(`${router.host}: ${message}`);
+      }
+    }
+  }
+  return result;
+}
+
 /**
  * Mencatat login pertama dari radacct, menghitung expired, dan menghapus
  * voucher yang sudah habis masa aktifnya.
@@ -615,6 +709,12 @@ export async function maintenance(hapusExpired = true) {
     );
   }
   result.expired = habis.length;
+
+  // Jangan bergantung pada useEffect di browser: proses server membersihkan
+  // sesi, cookie, hotspot user, dan PPP secret di semua router tersimpan.
+  if (habis.length) {
+    await cleanupExpiredOnRouters(habis.map((row) => row.username)).catch(() => undefined);
+  }
 
   // 4) Bersihkan otomatis voucher yang sudah expired lebih dari 2 bulan
   if (hapusExpired) {
