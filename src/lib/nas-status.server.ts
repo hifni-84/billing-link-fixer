@@ -129,9 +129,11 @@ export async function nasStatuses(
           // Entri RADIUS aktif tetap menjadi bukti konfigurasi siap ketika API
           // router dapat dijangkau melalui tunnel SSTP/L2TP/WireGuard.
           radiusConfigured = entries.some((e) => {
-            const disabled = String(e["disabled"] ?? "false").toLowerCase() === "true";
-            const service = String(e["service"] ?? "").toLowerCase();
-            return !disabled && (service.includes("hotspot") || service.includes("ppp"));
+            // API RouterOS v6 bisa tidak mengirim properti service pada hasil
+            // /radius/print. Selama entri tidak disabled, konfigurasi tersebut
+            // valid; service sudah ditentukan saat entri dibuat di MikroTik.
+            const disabled = String(e["disabled"] ?? "false").trim().toLowerCase();
+            return disabled !== "true" && disabled !== "yes";
           });
           const ids = entries
             .map((e) => String(e[".id"] ?? ""))
