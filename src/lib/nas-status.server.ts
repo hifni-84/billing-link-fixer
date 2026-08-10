@@ -32,6 +32,7 @@ export async function nasStatuses(
   try {
     rows = await query<{ nasipaddress: string; sesi: number; terakhir: string | null }>(
       `SELECT nasipaddress,
+              MAX(COALESCE(calledstationid, '')) AS dummy_called,
               SUM(acctstoptime IS NULL) AS sesi,
               DATE_FORMAT(MAX(COALESCE(acctupdatetime, acctstarttime)), '%Y-%m-%dT%H:%i:%sZ') AS terakhir
          FROM radacct
@@ -42,12 +43,34 @@ export async function nasStatuses(
     rows = [];
   }
 
-  const byIp = new Map(rows.map((r) => [String(r.nasipaddress), r]));
+  const byIp = new Map(rows.map((r) => [String(r.nasipaddress).trim().toLowerCase(), r]));
+
+  // Statistik autentikasi per NAS (radpostauth) sebagai bukti tambahan bahwa
+  // NAS ini benar-benar bertukar paket dengan server — dipakai agar beberapa
+  // NAS sekaligus bisa terdeteksi aktif, bukan hanya yang punya sesi accounting.
+  let auth: { nasipaddress: string; terakhir: string | null }[] = [];
+  try {
+    auth = await query<{ nasipaddress: string; terakhir: string | null }>(
+      `SELECT COALESCE(nasipaddress,'') AS nasipaddress,
+              DATE_FORMAT(MAX(authdate), '%Y-%m-%dT%H:%i:%sZ') AS terakhir
+         FROM radpostauth
+        WHERE authdate > (UTC_TIMESTAMP() - INTERVAL 7 DAY)
+        GROUP BY nasipaddress`,
+    );
+  } catch {
+    auth = [];
+  }
+  const authByIp = new Map(auth.map((a) => [String(a.nasipaddress).trim().toLowerCase(), a]));
 
   return Promise.all(
     nas.map(async (n) => {
-      const r = byIp.get(n.nasname);
-      const last = r?.terakhir ?? null;
+      const key = n.nasname.trim().toLowerCase();
+      const r = byIp.get(key);
+      const a = authByIp.get(key);
+      const times = [r?.terakhir ?? null, a?.terakhir ?? null].filter(Boolean) as string[];
+      const last = times.length
+        ? times.reduce((x, y) => (new Date(x) > new Date(y) ? x : y))
+        : null;
       const fresh = last ? Date.now() - new Date(last).getTime() < 15 * 60 * 1000 : false;
 
       let api = false;
