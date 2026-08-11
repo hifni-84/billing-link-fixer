@@ -44,6 +44,7 @@ export type HotspotActive = {
   user: string;
   address?: string;
   "mac-address"?: string;
+  server?: string;
   uptime?: string;
   "session-time-left"?: string;
   "bytes-in"?: string;

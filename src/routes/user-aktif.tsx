@@ -41,6 +41,16 @@ function ActivePage() {
   const active = useActive(creds, configured);
   const qc = useQueryClient();
 
+  // Router bisa mengirim entri ganda saat data besar → hitung unik per .id.
+  const rows = Array.from(
+    new Map((active.data ?? []).map((s) => [s[".id"] || `${s.user}|${s.address}`, s])).values(),
+  );
+  const perServer = rows.reduce<Record<string, number>>((acc, s) => {
+    const key = s.server?.trim() || "(tanpa server)";
+    acc[key] = (acc[key] ?? 0) + 1;
+    return acc;
+  }, {});
+
   const disconnect = useMutation({
     mutationFn: async (id: string) => {
       const res = await mt(creds, `/ip/hotspot/active/${id}`, "DELETE");
@@ -66,11 +76,11 @@ function ActivePage() {
     <>
       <PageHeader
         title="User Aktif"
-        description={`Total user aktif: ${active.data?.length ?? 0} — diperbarui otomatis setiap 10 detik.`}
+        description={`Total user aktif: ${rows.length} di router ${creds.host || "-"} — diperbarui otomatis setiap 10 detik. Winbox menampilkan angka lebih kecil bila tab Active sedang difilter atau hanya satu hotspot server yang dilihat.`}
         action={
           <div className="flex items-center gap-3">
             <span className="rounded-md border border-border bg-muted/40 px-3 py-1.5 text-sm">
-              Total Aktif: <strong className="mono-num">{active.data?.length ?? 0}</strong>
+              Total Aktif: <strong className="mono-num">{rows.length}</strong>
             </span>
             <Button variant="outline" onClick={() => active.refetch()}>
               <RefreshCw className="size-4" /> Muat Ulang
@@ -85,11 +95,30 @@ function ActivePage() {
         </div>
       )}
 
+      {rows.length > 0 && (
+        <div className="panel mb-6 p-4">
+          <h2 className="mb-2 text-sm font-semibold">Rincian per Hotspot Server</h2>
+          <div className="flex flex-wrap gap-2">
+            {Object.entries(perServer)
+              .sort((a, b) => b[1] - a[1])
+              .map(([name, count]) => (
+                <span
+                  key={name}
+                  className="rounded-md border border-border bg-muted/40 px-3 py-1.5 text-xs"
+                >
+                  {name}: <strong className="mono-num">{count}</strong>
+                </span>
+              ))}
+          </div>
+        </div>
+      )}
+
       <div className="panel overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>User</TableHead>
+              <TableHead>Server</TableHead>
               <TableHead>IP</TableHead>
               <TableHead>MAC</TableHead>
               <TableHead>Uptime</TableHead>
@@ -100,9 +129,10 @@ function ActivePage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {(active.data ?? []).map((s) => (
+            {rows.map((s) => (
               <TableRow key={s[".id"]}>
                 <TableCell className="font-medium">{s.user}</TableCell>
+                <TableCell className="text-xs">{s.server ?? "-"}</TableCell>
                 <TableCell className="mono-num">{s.address ?? "-"}</TableCell>
                 <TableCell className="mono-num text-xs">{s["mac-address"] ?? "-"}</TableCell>
                 <TableCell className="mono-num">{s.uptime ?? "-"}</TableCell>
@@ -121,9 +151,9 @@ function ActivePage() {
                 </TableCell>
               </TableRow>
             ))}
-            {!active.isLoading && (active.data?.length ?? 0) === 0 && (
+            {!active.isLoading && rows.length === 0 && (
               <TableRow>
-                <TableCell colSpan={8} className="py-10 text-center text-muted-foreground">
+                <TableCell colSpan={9} className="py-10 text-center text-muted-foreground">
                   Tidak ada user yang sedang online.
                 </TableCell>
               </TableRow>
