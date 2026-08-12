@@ -425,7 +425,7 @@ export async function report(): Promise<RadiusReport> {
   }>(
     `SELECT v.paid, COALESCE(p.cost_price, 0) AS cost_price, v.plan AS plan,
             ${utc("v.created_at")} AS created_at,
-            ${utc("COALESCE(v.first_login, (SELECT MIN(a.acctstarttime) FROM radacct a WHERE a.username = v.username))")} AS first_login
+            ${utc("COALESCE(v.first_login, (SELECT MIN(a.acctstarttime) FROM radacct a WHERE a.username = v.username AND a.acctstarttime >= v.created_at))")} AS first_login
        FROM billing_voucher v
        LEFT JOIN billing_plan p ON p.name = v.plan`,
   );
@@ -631,10 +631,12 @@ export async function maintenance(hapusExpired = true) {
   }>(
     `SELECT v.username,
             COALESCE(v.first_login,
-              (SELECT MIN(a.acctstarttime) FROM radacct a WHERE a.username = v.username)) AS first,
+              (SELECT MIN(a.acctstarttime) FROM radacct a
+                WHERE a.username = v.username AND a.acctstarttime >= v.created_at)) AS first,
             DATE_ADD(
               COALESCE(v.first_login,
-                (SELECT MIN(a.acctstarttime) FROM radacct a WHERE a.username = v.username)),
+                (SELECT MIN(a.acctstarttime) FROM radacct a
+                  WHERE a.username = v.username AND a.acctstarttime >= v.created_at)),
               INTERVAL p.validity_seconds SECOND
             ) AS exp
        FROM billing_voucher v
@@ -665,9 +667,11 @@ export async function maintenance(hapusExpired = true) {
   // 1b) Voucher tanpa masa aktif di paket: tetap catat login pertama saja.
   await query(
     `UPDATE billing_voucher v
-        SET v.first_login = (SELECT MIN(a.acctstarttime) FROM radacct a WHERE a.username = v.username)
+        SET v.first_login = (SELECT MIN(a.acctstarttime) FROM radacct a
+                              WHERE a.username = v.username AND a.acctstarttime >= v.created_at)
       WHERE v.first_login IS NULL
-        AND EXISTS (SELECT 1 FROM radacct a WHERE a.username = v.username)`,
+        AND EXISTS (SELECT 1 FROM radacct a
+                     WHERE a.username = v.username AND a.acctstarttime >= v.created_at)`,
   );
 
   // 1c) Voucher UNPAID yang sudah login -> otomatis jadi PAID (sudah terjual)
@@ -677,7 +681,17 @@ export async function maintenance(hapusExpired = true) {
         SET v.paid = 1
       WHERE v.paid = 0
         AND (v.first_login IS NOT NULL
-             OR EXISTS (SELECT 1 FROM radacct a WHERE a.username = v.username))`,
+             OR EXISTS (SELECT 1 FROM radacct a
+                         WHERE a.username = v.username AND a.acctstarttime >= v.created_at))`,
+  );
+
+  // 1d) Perbaiki stempel salah: login pertama tidak mungkin lebih awal dari
+  //     voucher dibuat (biasanya sisa data radacct dari username lama).
+  //     Dikosongkan agar dihitung ulang dari sesi yang benar.
+  await query(
+    `UPDATE billing_voucher
+        SET first_login = NULL, expires_at = NULL
+      WHERE first_login IS NOT NULL AND first_login < created_at`,
   );
 
   // 2) Perbarui sisa waktu sesi user aktif agar router memutus tepat waktu
