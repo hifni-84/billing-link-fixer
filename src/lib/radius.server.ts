@@ -484,7 +484,7 @@ export async function report(): Promise<RadiusReport> {
   const tanggalTampil = new Set(dailyRows.map((d) => d.date));
   const dailyPlanRows = [...dailyPlanMap.entries()]
     .map(([key, value]) => {
-      const [date, plan] = key.split("\u0000");
+      const [date = "", plan = "default"] = key.split("\u0000");
       return { date, plan, ...value };
     })
     .filter((r) => tanggalTampil.has(r.date))
