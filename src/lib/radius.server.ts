@@ -854,8 +854,8 @@ export async function stampRouterLogins(
     if (validity > 0) {
       await query(
         `UPDATE billing_voucher
-            SET first_login = DATE_SUB(NOW(), INTERVAL ? SECOND),
-                expires_at = DATE_ADD(DATE_SUB(NOW(), INTERVAL ? SECOND), INTERVAL ? SECOND),
+            SET first_login = GREATEST(created_at, DATE_SUB(NOW(), INTERVAL ? SECOND)),
+                expires_at = DATE_ADD(GREATEST(created_at, DATE_SUB(NOW(), INTERVAL ? SECOND)), INTERVAL ? SECOND),
                 paid = 1
           WHERE username = ?`,
         [lalu, lalu, validity, it.username],
@@ -863,7 +863,7 @@ export async function stampRouterLogins(
     } else {
       await query(
         `UPDATE billing_voucher
-            SET first_login = DATE_SUB(NOW(), INTERVAL ? SECOND), paid = 1
+            SET first_login = GREATEST(created_at, DATE_SUB(NOW(), INTERVAL ? SECOND)), paid = 1
           WHERE username = ?`,
         [lalu, it.username],
       );
