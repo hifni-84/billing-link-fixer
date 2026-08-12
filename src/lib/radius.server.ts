@@ -398,6 +398,8 @@ export type RadiusReport = {
   daily: { date: string; total: number; count: number }[];
   monthly: { month: string; total: number; count: number }[];
   perPlan: { plan: string; total: number; count: number }[];
+  /** Rincian paket yang terjual pada setiap tanggal */
+  dailyPlans: { date: string; plan: string; total: number; count: number }[];
   todayRevenue: number;
   todayCount: number;
   monthRevenue: number;
@@ -440,6 +442,7 @@ export async function report(): Promise<RadiusReport> {
   const dailyMap = new Map<string, { total: number; count: number }>();
   const monthlyMap = new Map<string, { total: number; count: number }>();
   const planMap = new Map<string, { total: number; count: number }>();
+  const dailyPlanMap = new Map<string, { total: number; count: number }>();
   let totalRevenue = 0;
   let used = 0;
 
@@ -458,6 +461,9 @@ export async function report(): Promise<RadiusReport> {
     const planKey = row.plan || "default";
     const planValue = planMap.get(planKey) ?? { total: 0, count: 0 };
     planMap.set(planKey, { total: planValue.total + amount, count: planValue.count + 1 });
+    const dpKey = `${date}\u0000${planKey}`;
+    const dpValue = dailyPlanMap.get(dpKey) ?? { total: 0, count: 0 };
+    dailyPlanMap.set(dpKey, { total: dpValue.total + amount, count: dpValue.count + 1 });
     const month = date.slice(0, 7);
     const monthlyValue = monthlyMap.get(month) ?? { total: 0, count: 0 };
     monthlyMap.set(month, {
@@ -475,6 +481,14 @@ export async function report(): Promise<RadiusReport> {
     .sort(([a], [b]) => b.localeCompare(a))
     .slice(0, 12)
     .map(([month, value]) => ({ month, ...value }));
+  const tanggalTampil = new Set(dailyRows.map((d) => d.date));
+  const dailyPlanRows = [...dailyPlanMap.entries()]
+    .map(([key, value]) => {
+      const [date, plan] = key.split("\u0000");
+      return { date, plan, ...value };
+    })
+    .filter((r) => tanggalTampil.has(r.date))
+    .sort((a, b) => b.date.localeCompare(a.date) || b.total - a.total);
 
   const on = await query<{ n: number }>(
     `SELECT COUNT(*) AS n FROM radacct WHERE acctstoptime IS NULL
@@ -489,6 +503,7 @@ export async function report(): Promise<RadiusReport> {
     perPlan: [...planMap.entries()]
       .map(([plan, value]) => ({ plan, ...value }))
       .sort((a, b) => b.total - a.total),
+    dailyPlans: dailyPlanRows,
     todayRevenue: hariRow?.total ?? 0,
     todayCount: hariRow?.count ?? 0,
     monthRevenue: bulanRow?.total ?? 0,
