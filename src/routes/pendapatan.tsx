@@ -1,8 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { RefreshCw } from "lucide-react";
+import { useMemo, useState } from "react";
 
 import { PageHeader } from "@/components/Shared";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useRadiusReport } from "@/lib/radius-client";
 import { formatIDR } from "@/lib/mikrotik-types";
 
@@ -29,6 +37,32 @@ export const Route = createFileRoute("/pendapatan")({
 
 function PendapatanPage() {
   const report = useRadiusReport();
+  const [plan, setPlan] = useState("all");
+
+  const daftarPaket = useMemo(
+    () => (report.data?.perPlan ?? []).map((p) => p.plan),
+    [report.data],
+  );
+
+  const dailyPlans = report.data?.dailyPlans ?? [];
+
+  /** Baris harian mengikuti filter paket yang dipilih. */
+  const harian = useMemo(() => {
+    if (plan === "all") return [...(report.data?.daily ?? [])].reverse();
+    return dailyPlans
+      .filter((r) => r.plan === plan)
+      .map((r) => ({ date: r.date, count: r.count, total: r.total }))
+      .sort((a, b) => b.date.localeCompare(a.date));
+  }, [report.data, dailyPlans, plan]);
+
+  /** Rincian paket per tanggal (mengikuti filter). */
+  const rincian = useMemo(
+    () =>
+      dailyPlans
+        .filter((r) => plan === "all" || r.plan === plan)
+        .sort((a, b) => b.date.localeCompare(a.date) || b.total - a.total),
+    [dailyPlans, plan],
+  );
 
   return (
     <>
@@ -36,9 +70,24 @@ function PendapatanPage() {
         title="Pendapatan"
         description="Rekap pendapatan harian dan bulanan."
         action={
-          <Button variant="outline" onClick={() => report.refetch()}>
-            <RefreshCw className="size-4" /> Muat Ulang
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Select value={plan} onValueChange={setPlan}>
+              <SelectTrigger className="w-44">
+                <SelectValue placeholder="Semua paket" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Semua paket</SelectItem>
+                {daftarPaket.map((p) => (
+                  <SelectItem key={p} value={p}>
+                    {p}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button variant="outline" onClick={() => report.refetch()}>
+              <RefreshCw className="size-4" /> Muat Ulang
+            </Button>
+          </div>
         }
       />
 
@@ -66,7 +115,10 @@ function PendapatanPage() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="panel p-5">
-          <h3 className="mb-3 text-sm font-semibold">Pendapatan Harian (30 hari)</h3>
+          <h3 className="mb-3 text-sm font-semibold">
+            Pendapatan Harian (30 hari)
+            {plan !== "all" ? ` — ${plan}` : ""}
+          </h3>
           <div className="overflow-auto">
             <table className="w-full text-sm">
               <thead className="text-xs text-muted-foreground">
@@ -77,14 +129,14 @@ function PendapatanPage() {
                 </tr>
               </thead>
               <tbody>
-                {[...(report.data?.daily ?? [])].reverse().map((d) => (
+                {harian.map((d) => (
                   <tr key={d.date} className="border-t border-border/50">
                     <td className="p-2">{d.date}</td>
                     <td className="mono-num p-2 text-right">{d.count}</td>
                     <td className="mono-num p-2 text-right">{formatIDR(d.total)}</td>
                   </tr>
                 ))}
-                {!report.data?.daily.length && (
+                {harian.length === 0 && (
                   <tr>
                     <td colSpan={3} className="p-4 text-center text-muted-foreground">
                       Belum ada data
@@ -125,6 +177,39 @@ function PendapatanPage() {
               </tbody>
             </table>
           </div>
+        </div>
+      </div>
+
+      <div className="panel mt-6 p-5">
+        <h3 className="mb-3 text-sm font-semibold">Paket Terjual per Tanggal</h3>
+        <div className="overflow-auto">
+          <table className="w-full text-sm">
+            <thead className="text-xs text-muted-foreground">
+              <tr>
+                <th className="p-2 text-left">Tanggal</th>
+                <th className="p-2 text-left">Paket</th>
+                <th className="p-2 text-right">Terjual</th>
+                <th className="p-2 text-right">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rincian.map((r) => (
+                <tr key={`${r.date}-${r.plan}`} className="border-t border-border/50">
+                  <td className="p-2">{r.date}</td>
+                  <td className="truncate p-2">{r.plan}</td>
+                  <td className="mono-num p-2 text-right">{r.count}</td>
+                  <td className="mono-num p-2 text-right">{formatIDR(r.total)}</td>
+                </tr>
+              ))}
+              {rincian.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="p-4 text-center text-muted-foreground">
+                    Belum ada data
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     </>

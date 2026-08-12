@@ -101,6 +101,7 @@ export const radiusReport = createServerFn({ method: "GET" }).handler(async () =
       daily: [],
       monthly: [],
       perPlan: [],
+      dailyPlans: [],
       todayRevenue: 0,
       todayCount: 0,
       monthRevenue: 0,
