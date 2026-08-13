@@ -225,6 +225,14 @@ export const radiusReactivateUsers = createServerFn({ method: "POST" })
     return reactivateUsers(data.usernames);
   });
 
+/** Aktifkan / nonaktifkan user (voucher & PPPoE). */
+export const radiusSetDisabled = createServerFn({ method: "POST" })
+  .inputValidator((d: { usernames: string[]; disabled: boolean }) => d)
+  .handler(async ({ data }) => {
+    const { setUsersDisabled } = await import("./radius.server");
+    return setUsersDisabled(data.usernames, data.disabled);
+  });
+
 export const settingsGet = createServerFn({ method: "GET" }).handler(async () => {
   try {
     const { getSettings } = await import("./radius.server");
