@@ -25,6 +25,8 @@ export type RadiusUser = {
   service: "hotspot" | "pppoe";
   /** 1 = sudah dibayar (paid), 0 = belum dibayar (unpaid) */
   paid?: number;
+  /** 1 = user dinonaktifkan (tidak bisa login), 0 = aktif */
+  disabled?: number;
   /** IP NAS pembatas login, kosong = semua NAS */
   nas?: string | null;
   created_at: string;
