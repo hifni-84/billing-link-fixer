@@ -1,11 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Pencil, Plus, Printer, RefreshCw, RotateCcw, Trash2 } from "lucide-react";
+import { Ban, Pencil, Play, Plus, Printer, RefreshCw, RotateCcw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { PageHeader } from "@/components/Shared";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -37,6 +38,7 @@ import {
   radiusDeleteExpired,
   radiusDeleteUsers,
   radiusReactivateUsers,
+  radiusSetDisabled,
   radiusUpdateUser,
 } from "@/lib/radius.functions";
 import {
@@ -128,6 +130,24 @@ function VoucherPage() {
   const reactivate = useRadiusMutation((usernames: string[]) =>
     radiusReactivateUsers({ data: { usernames } }),
   );
+  const setDisabled = useRadiusMutation((p: { usernames: string[]; disabled: boolean }) =>
+    radiusSetDisabled({ data: p }),
+  );
+  const ubahAktif = (usernames: string[], aktif: boolean) =>
+    setDisabled.mutate(
+      { usernames, disabled: !aktif },
+      {
+        onSuccess: () => {
+          toast.success(
+            usernames.length === 1
+              ? `${usernames[0]} ${aktif ? "diaktifkan" : "dinonaktifkan"}`
+              : `${usernames.length} user ${aktif ? "diaktifkan" : "dinonaktifkan"}`,
+          );
+          if (usernames.length > 1) setPilih({});
+        },
+        onError: (e: Error) => toast.error(e.message),
+      },
+    );
   const createUsers = useRadiusMutation(
     (payload: Parameters<typeof radiusCreateUsers>[0]["data"]) =>
       radiusCreateUsers({ data: payload }),
@@ -238,6 +258,8 @@ function VoucherPage() {
       if (filter === "expired") return expired;
       if (filter === "paid") return u.paid !== 0;
       if (filter === "unpaid") return u.paid === 0;
+      if (filter === "aktif") return u.disabled !== 1;
+      if (filter === "nonaktif") return u.disabled === 1;
       return true;
     });
   }, [users.data, cari, filter, filterPlan, dariTgl, sampaiTgl, now]);
@@ -724,6 +746,8 @@ function VoucherPage() {
                   <SelectItem value="expired">Expired</SelectItem>
                   <SelectItem value="paid">Paid</SelectItem>
                   <SelectItem value="unpaid">Unpaid</SelectItem>
+                  <SelectItem value="aktif">Aktif</SelectItem>
+                  <SelectItem value="nonaktif">Nonaktif</SelectItem>
                 </SelectContent>
               </Select>
               <Select value={filterPlan} onValueChange={setFilterPlan}>
@@ -840,6 +864,31 @@ function VoucherPage() {
                     <RotateCcw className="size-4" /> Aktifkan Terpilih
                   </Button>
                   <Button
+                    variant="outline"
+                    disabled={setDisabled.isPending}
+                    onClick={() =>
+                      ubahAktif(
+                        terpilih.map((u) => u.username),
+                        true,
+                      )
+                    }
+                  >
+                    <Play className="size-4" /> Aktifkan User
+                  </Button>
+                  <Button
+                    variant="outline"
+                    disabled={setDisabled.isPending}
+                    onClick={() => {
+                      if (!window.confirm(`Nonaktifkan ${terpilih.length} user terpilih?`)) return;
+                      ubahAktif(
+                        terpilih.map((u) => u.username),
+                        false,
+                      );
+                    }}
+                  >
+                    <Ban className="size-4" /> Nonaktifkan User
+                  </Button>
+                  <Button
                     variant="destructive"
                     onClick={() => {
                       if (!window.confirm(`Hapus ${terpilih.length} voucher terpilih?`)) return;
@@ -900,6 +949,7 @@ function VoucherPage() {
                   <TableHead>Expired</TableHead>
                   <TableHead>Sisa Masa Aktif</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Aktif</TableHead>
                   <TableHead className="w-24 text-right">Aksi</TableHead>
                 </TableRow>
               </TableHeader>
@@ -954,6 +1004,19 @@ function VoucherPage() {
                           <Badge variant="secondary">Belum dipakai</Badge>
                         )}
                       </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Switch
+                            aria-label={`Aktifkan ${u.username}`}
+                            checked={u.disabled !== 1}
+                            disabled={setDisabled.isPending}
+                            onCheckedChange={(v) => ubahAktif([u.username], v === true)}
+                          />
+                          <span className="text-xs text-muted-foreground">
+                            {u.disabled === 1 ? "Nonaktif" : "Aktif"}
+                          </span>
+                        </div>
+                      </TableCell>
                       <TableCell className="text-right">
                         <Button
                           size="icon"
@@ -994,7 +1057,7 @@ function VoucherPage() {
                 })}
                 {daftar.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={13} className="py-10 text-center text-muted-foreground">
+                    <TableCell colSpan={14} className="py-10 text-center text-muted-foreground">
                       Belum ada user di database RADIUS.
                     </TableCell>
                   </TableRow>

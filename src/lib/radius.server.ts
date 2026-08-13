@@ -63,6 +63,63 @@ async function ensureNasColumn() {
   nasColReady = true;
 }
 
+let disabledColReady = false;
+/** Menambahkan kolom disabled pada billing_voucher bila belum ada. */
+async function ensureDisabledColumn() {
+  if (disabledColReady) return;
+  try {
+    await query("ALTER TABLE billing_voucher ADD COLUMN disabled TINYINT(1) NOT NULL DEFAULT 0");
+  } catch {
+    /* kolom sudah ada */
+  }
+  disabledColReady = true;
+}
+
+/**
+ * Aktifkan / nonaktifkan user (voucher & pelanggan PPPoE).
+ * Nonaktif: password RADIUS dicabut + sesi/user di router dibersihkan,
+ * data voucher tetap tersimpan. Aktif kembali: password dipulihkan.
+ */
+export async function setUsersDisabled(usernames: string[], disabled: boolean) {
+  await ensureDisabledColumn();
+  if (!usernames.length) return { changed: 0 };
+  const marks = usernames.map(() => "?").join(",");
+  const rows = await query<{ username: string; password: string; plan: string }>(
+    `SELECT username, password, plan FROM billing_voucher WHERE username IN (${marks})`,
+    usernames,
+  );
+  for (const r of rows) {
+    await query("UPDATE billing_voucher SET disabled = ? WHERE username = ?", [
+      disabled ? 1 : 0,
+      r.username,
+    ]);
+    if (disabled) {
+      await query(
+        "DELETE FROM radcheck WHERE username = ? AND attribute = 'Cleartext-Password'",
+        [r.username],
+      );
+    } else {
+      await query(
+        "DELETE FROM radcheck WHERE username = ? AND attribute = 'Cleartext-Password'",
+        [r.username],
+      );
+      await query(
+        "INSERT INTO radcheck (username, attribute, op, value) VALUES (?, 'Cleartext-Password', ':=', ?)",
+        [r.username, r.password],
+      );
+      await query("DELETE FROM radusergroup WHERE username = ?", [r.username]);
+      await query("INSERT INTO radusergroup (username, groupname, priority) VALUES (?, ?, 1)", [
+        r.username,
+        r.plan,
+      ]);
+    }
+  }
+  if (disabled) {
+    await cleanupExpiredOnRouters(rows.map((r) => r.username)).catch(() => undefined);
+  }
+  return { changed: rows.length };
+}
+
 export async function query<T = Row>(sql: string, params: unknown[] = []): Promise<T[]> {
   const [rows] = await db().query(sql, params);
   return rows as T[];
@@ -196,8 +253,9 @@ export async function deletePlan(name: string) {
 export async function listUsers(): Promise<RadiusUser[]> {
   await ensurePaidColumn();
   await ensureNasColumn();
+  await ensureDisabledColumn();
   return query<RadiusUser>(
-    `SELECT v.username, v.password, v.plan, v.batch, v.price, v.service, v.paid, v.nas,
+    `SELECT v.username, v.password, v.plan, v.batch, v.price, v.service, v.paid, v.nas, v.disabled,
             ${utc("v.created_at")} AS created_at,
             ${utc("v.first_login")} AS first_login,
             ${utc("v.expires_at")} AS expires_at,
