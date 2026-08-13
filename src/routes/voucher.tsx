@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Pencil, Plus, Printer, RefreshCw, RotateCcw, Trash2 } from "lucide-react";
+import { Ban, Pencil, Play, Plus, Printer, RefreshCw, RotateCcw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { PageHeader } from "@/components/Shared";
@@ -37,6 +37,7 @@ import {
   radiusDeleteExpired,
   radiusDeleteUsers,
   radiusReactivateUsers,
+  radiusSetDisabled,
   radiusUpdateUser,
 } from "@/lib/radius.functions";
 import {
@@ -128,6 +129,24 @@ function VoucherPage() {
   const reactivate = useRadiusMutation((usernames: string[]) =>
     radiusReactivateUsers({ data: { usernames } }),
   );
+  const setDisabled = useRadiusMutation((p: { usernames: string[]; disabled: boolean }) =>
+    radiusSetDisabled({ data: p }),
+  );
+  const ubahAktif = (usernames: string[], aktif: boolean) =>
+    setDisabled.mutate(
+      { usernames, disabled: !aktif },
+      {
+        onSuccess: () => {
+          toast.success(
+            usernames.length === 1
+              ? `${usernames[0]} ${aktif ? "diaktifkan" : "dinonaktifkan"}`
+              : `${usernames.length} user ${aktif ? "diaktifkan" : "dinonaktifkan"}`,
+          );
+          if (usernames.length > 1) setPilih({});
+        },
+        onError: (e: Error) => toast.error(e.message),
+      },
+    );
   const createUsers = useRadiusMutation(
     (payload: Parameters<typeof radiusCreateUsers>[0]["data"]) =>
       radiusCreateUsers({ data: payload }),
@@ -238,6 +257,8 @@ function VoucherPage() {
       if (filter === "expired") return expired;
       if (filter === "paid") return u.paid !== 0;
       if (filter === "unpaid") return u.paid === 0;
+      if (filter === "aktif") return u.disabled !== 1;
+      if (filter === "nonaktif") return u.disabled === 1;
       return true;
     });
   }, [users.data, cari, filter, filterPlan, dariTgl, sampaiTgl, now]);
