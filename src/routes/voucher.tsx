@@ -745,6 +745,8 @@ function VoucherPage() {
                   <SelectItem value="expired">Expired</SelectItem>
                   <SelectItem value="paid">Paid</SelectItem>
                   <SelectItem value="unpaid">Unpaid</SelectItem>
+                  <SelectItem value="aktif">Aktif</SelectItem>
+                  <SelectItem value="nonaktif">Nonaktif</SelectItem>
                 </SelectContent>
               </Select>
               <Select value={filterPlan} onValueChange={setFilterPlan}>
@@ -861,6 +863,31 @@ function VoucherPage() {
                     <RotateCcw className="size-4" /> Aktifkan Terpilih
                   </Button>
                   <Button
+                    variant="outline"
+                    disabled={setDisabled.isPending}
+                    onClick={() =>
+                      ubahAktif(
+                        terpilih.map((u) => u.username),
+                        true,
+                      )
+                    }
+                  >
+                    <Play className="size-4" /> Aktifkan User
+                  </Button>
+                  <Button
+                    variant="outline"
+                    disabled={setDisabled.isPending}
+                    onClick={() => {
+                      if (!window.confirm(`Nonaktifkan ${terpilih.length} user terpilih?`)) return;
+                      ubahAktif(
+                        terpilih.map((u) => u.username),
+                        false,
+                      );
+                    }}
+                  >
+                    <Ban className="size-4" /> Nonaktifkan User
+                  </Button>
+                  <Button
                     variant="destructive"
                     onClick={() => {
                       if (!window.confirm(`Hapus ${terpilih.length} voucher terpilih?`)) return;
@@ -921,6 +948,7 @@ function VoucherPage() {
                   <TableHead>Expired</TableHead>
                   <TableHead>Sisa Masa Aktif</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Aktif</TableHead>
                   <TableHead className="w-24 text-right">Aksi</TableHead>
                 </TableRow>
               </TableHeader>
@@ -975,6 +1003,19 @@ function VoucherPage() {
                           <Badge variant="secondary">Belum dipakai</Badge>
                         )}
                       </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Switch
+                            aria-label={`Aktifkan ${u.username}`}
+                            checked={u.disabled !== 1}
+                            disabled={setDisabled.isPending}
+                            onCheckedChange={(v) => ubahAktif([u.username], v === true)}
+                          />
+                          <span className="text-xs text-muted-foreground">
+                            {u.disabled === 1 ? "Nonaktif" : "Aktif"}
+                          </span>
+                        </div>
+                      </TableCell>
                       <TableCell className="text-right">
                         <Button
                           size="icon"
@@ -1015,7 +1056,7 @@ function VoucherPage() {
                 })}
                 {daftar.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={13} className="py-10 text-center text-muted-foreground">
+                    <TableCell colSpan={14} className="py-10 text-center text-muted-foreground">
                       Belum ada user di database RADIUS.
                     </TableCell>
                   </TableRow>
