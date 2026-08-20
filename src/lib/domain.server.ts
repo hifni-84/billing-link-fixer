@@ -194,3 +194,128 @@ export async function domainApply(input: DomainOptions): Promise<{ ok: boolean; 
     return { ok: false, log };
   }
 }
+
+// ===================== MIKHMON =====================
+
+export const mikhmonKeys = {
+  domain: "billing.public.mikhmon_domain",
+  email: "billing.public.mikhmon_email",
+  https: "billing.public.mikhmon_https",
+};
+
+export type MikhmonStatus = {
+  ready: boolean;
+  scriptFound: boolean;
+  sudoAllowed: boolean;
+  setupCommand: string;
+  domain: string;
+  email: string;
+  https: boolean;
+  certInstalled: boolean;
+  mikhmonRootExists: boolean;
+  error: string | null;
+};
+
+export async function mikhmonStatus(): Promise<MikhmonStatus> {
+  const s = await getSettings();
+  const domain = s[mikhmonKeys.domain] ?? "";
+  const email = s[mikhmonKeys.email] ?? "";
+  const https = s[mikhmonKeys.https] === "1";
+  let scriptFound = false;
+  let mikhmonRootExists = false;
+  try {
+    await fs.access(MIKHMON_SCRIPT);
+    scriptFound = true;
+  } catch {
+    scriptFound = false;
+  }
+  try {
+    await fs.access("/var/www/mikhmon/index.php");
+    mikhmonRootExists = true;
+  } catch {
+    mikhmonRootExists = false;
+  }
+  let allowed = false;
+  if (scriptFound) {
+    try {
+      await exec("sudo", ["-n", "-l", MIKHMON_SCRIPT], { timeout: 10_000 });
+      allowed = true;
+    } catch {
+      allowed = false;
+    }
+  }
+  let certInstalled = false;
+  if (domain) {
+    try {
+      await fs.access(`/etc/letsencrypt/live/${domain}`);
+      certInstalled = true;
+    } catch {
+      certInstalled = false;
+    }
+  }
+  return {
+    ready: scriptFound && allowed,
+    scriptFound,
+    sudoAllowed: allowed,
+    setupCommand: `sudo bash ${MIKHMON_SUDO}`,
+    domain,
+    email,
+    https,
+    certInstalled,
+    mikhmonRootExists,
+    error: mikhmonRootExists ? null : "Folder /var/www/mikhmon belum terpasang",
+  };
+}
+
+export async function mikhmonApply(input: {
+  domain: string;
+  email: string;
+  https: boolean;
+}): Promise<{ ok: boolean; log: string }> {
+  const domain = cleanHost(input.domain);
+  if (!domain) throw new Error("Isi nama domain untuk Mikhmon");
+  if (!isValidHost(domain)) throw new Error(`Domain tidak valid: ${domain}`);
+  const email = input.email.trim();
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    throw new Error("Format email tidak valid");
+  }
+
+  await saveSettings({
+    [mikhmonKeys.domain]: domain,
+    [mikhmonKeys.email]: email,
+    [mikhmonKeys.https]: input.https ? "1" : "0",
+  });
+
+  try {
+    await fs.access(MIKHMON_SCRIPT);
+  } catch {
+    throw new Error(`Skrip ${MIKHMON_SCRIPT} tidak ditemukan di server`);
+  }
+  if (!(await sudoAllowedMikhmon())) {
+    throw new Error(
+      `Izin sudo belum diberikan. Jalankan sekali di server: sudo bash ${MIKHMON_SUDO}`,
+    );
+  }
+
+  const args = ["-n", MIKHMON_SCRIPT, domain, email, input.https ? "1" : "0"];
+  try {
+    const { stdout, stderr } = await exec("sudo", args, {
+      timeout: 300_000,
+      maxBuffer: 4 * 1024 * 1024,
+    });
+    return { ok: true, log: `${stdout}${stderr}`.trim() };
+  } catch (e) {
+    const err = e as { stdout?: string; stderr?: string; message?: string };
+    const log = `${err.stdout ?? ""}${err.stderr ?? ""}`.trim() || err.message || "Gagal";
+    return { ok: false, log };
+  }
+}
+
+async function sudoAllowedMikhmon() {
+  try {
+    await exec("sudo", ["-n", "-l", MIKHMON_SCRIPT], { timeout: 10_000 });
+    return true;
+  } catch {
+    return false;
+  }
+}
