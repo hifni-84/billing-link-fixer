@@ -92,9 +92,10 @@ mkdir -p "$CFG_DIR"
 mk_mikhmon_block() {  # $1 = hostname publik, $2 = Host lokal yang dikenal Nginx
   cat <<BLK
   - hostname: $1
-    service: http://127.0.0.1:80
+    service: https://127.0.0.1:443
     originRequest:
       httpHostHeader: $2
+      noTLSVerify: true
 BLK
 }
 
