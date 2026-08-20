@@ -108,6 +108,34 @@ export function DomainManager() {
     toast.success(`Domain gratis ${suggested} dipakai sebagai domain utama`);
   };
 
+  const applyMikhmon = async () => {
+    if (!mkDomain.trim()) {
+      toast.error("Isi nama domain untuk Mikhmon");
+      return;
+    }
+    setMkBusy(true);
+    setMkLog("");
+    try {
+      const res = await mikhmonApplySave({
+        data: { domain: mkDomain, email: mkEmail, https: mkHttps },
+      });
+      setMkLog(res.log || res.error || "");
+      if (res.error) toast.error(res.error);
+      else if (res.ok) toast.success("Domain Mikhmon diterapkan ke server");
+      else toast.error("Domain tersimpan, tapi penerapan di server gagal");
+      const st = await mikhmonStatusGet();
+      if (st.ok && st.status) {
+        setMkReady(st.status.ready);
+        setMkCert(st.status.certInstalled);
+        setMkRootOk(st.status.mikhmonRootExists);
+      }
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setMkBusy(false);
+    }
+  };
+
   const certOf = (d: string) => certs.find((c) => c.domain === d.trim().toLowerCase());
 
   return (
