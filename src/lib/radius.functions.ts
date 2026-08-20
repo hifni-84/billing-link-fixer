@@ -96,7 +96,7 @@ export const radiusReport = createServerFn({ method: "GET" }).handler(async () =
   const { report } = await import("./radius.server");
   try {
     return await report();
-  } catch {
+  } catch (e) {
     return {
       daily: [],
       monthly: [],
@@ -111,6 +111,7 @@ export const radiusReport = createServerFn({ method: "GET" }).handler(async () =
       used: 0,
       unsold: 0,
       online: 0,
+      error: e instanceof Error ? e.message : String(e),
     };
   }
 });

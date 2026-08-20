@@ -91,6 +91,12 @@ function PendapatanPage() {
         }
       />
 
+      {report.data?.error ? (
+        <div className="panel mb-4 border-destructive/40 p-4 text-sm text-destructive">
+          Gagal membaca data pendapatan dari database: {report.data.error}
+        </div>
+      ) : null}
+
       <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {[
           {

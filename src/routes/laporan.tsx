@@ -106,6 +106,12 @@ function LaporanPage() {
         }
       />
 
+      {report.data?.error ? (
+        <div className="panel mb-4 border-destructive/40 p-4 text-sm text-destructive">
+          Gagal membaca data laporan dari database: {report.data.error}
+        </div>
+      ) : null}
+
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="panel p-5">
           <p className="text-xs uppercase tracking-widest text-muted-foreground">Total Omzet</p>
