@@ -14,6 +14,8 @@ const exec = promisify(execFile);
 const APP_DIR = process.env["BILLING_DIR"] ?? "/opt/mikrotik-billing";
 const SCRIPT = path.join(APP_DIR, "deploy", "apply-domain.sh");
 const SUDO_HELPER = path.join(APP_DIR, "deploy", "allow-domain-sudo.sh");
+const MIKHMON_SCRIPT = path.join(APP_DIR, "deploy", "apply-mikhmon-domain.sh");
+const MIKHMON_SUDO = path.join(APP_DIR, "deploy", "allow-mikhmon-sudo.sh");
 
 export const domainKeys = {
   list: "billing.public.domains",
