@@ -467,6 +467,8 @@ export type RadiusReport = {
   used: number;
   unsold: number;
   online: number;
+  /** Pesan bila agregasi gagal dibaca dari database. */
+  error?: string;
 };
 
 export async function report(): Promise<RadiusReport> {
@@ -476,19 +478,34 @@ export async function report(): Promise<RadiusReport> {
   // perbedaan perilaku DATE/INTERVAL antara versi MySQL dan MariaDB yang dapat
   // membuat seluruh laporan gagal lalu tampil sebagai angka nol.
   const offsetMenit = Number(process.env["RADIUS_TZ_OFFSET_MINUTES"] ?? 420);
-  const rows = await query<{
+  type ReportRow = {
     paid: number;
     cost_price: number;
+    price: number;
     plan: string | null;
     created_at: string;
     first_login: string | null;
-  }>(
-    `SELECT v.paid, COALESCE(p.cost_price, 0) AS cost_price, v.plan AS plan,
+  };
+  const sqlLengkap = `SELECT v.paid, COALESCE(p.cost_price, 0) AS cost_price, COALESCE(v.price, 0) AS price, v.plan AS plan,
             ${utc("v.created_at")} AS created_at,
             ${utc("COALESCE(v.first_login, (SELECT MIN(a.acctstarttime) FROM radacct a WHERE a.username = v.username AND a.acctstarttime >= v.created_at))")} AS first_login
        FROM billing_voucher v
-       LEFT JOIN billing_plan p ON p.name = v.plan`,
-  );
+       LEFT JOIN billing_plan p ON p.name = v.plan`;
+  // Versi sederhana dipakai bila subquery radacct gagal (mis. tabel radacct
+  // besar/berbeda versi) agar laporan tetap terbaca, tidak nol semua.
+  const sqlSederhana = `SELECT v.paid, COALESCE(p.cost_price, 0) AS cost_price, COALESCE(v.price, 0) AS price, v.plan AS plan,
+            ${utc("v.created_at")} AS created_at,
+            ${utc("v.first_login")} AS first_login
+       FROM billing_voucher v
+       LEFT JOIN billing_plan p ON p.name = v.plan`;
+  let pesanError = "";
+  let rows: ReportRow[] = [];
+  try {
+    rows = await query<ReportRow>(sqlLengkap);
+  } catch (e) {
+    pesanError = e instanceof Error ? e.message : String(e);
+    rows = await query<ReportRow>(sqlSederhana);
+  }
 
   const localDateKey = (iso: string) => {
     const time = new Date(iso).getTime();
@@ -513,7 +530,9 @@ export async function report(): Promise<RadiusReport> {
     if (!saleTime) continue;
     const date = localDateKey(saleTime);
     if (!date) continue;
-    const amount = Number(row.cost_price) || 0;
+    // Harga modal paket dipakai bila diisi; bila 0 gunakan harga voucher agar
+    // pendapatan tidak selalu tampil nol.
+    const amount = Number(row.cost_price) || Number(row.price) || 0;
     const day = dailyMap.get(date) ?? { total: 0, count: 0 };
     dailyMap.set(date, { total: day.total + amount, count: day.count + 1 });
     const planKey = row.plan || "default";
@@ -548,10 +567,16 @@ export async function report(): Promise<RadiusReport> {
     .filter((r) => tanggalTampil.has(r.date))
     .sort((a, b) => b.date.localeCompare(a.date) || b.total - a.total);
 
-  const on = await query<{ n: number }>(
-    `SELECT COUNT(*) AS n FROM radacct WHERE acctstoptime IS NULL
-       AND COALESCE(acctupdatetime, acctstarttime) > NOW() - INTERVAL 10 MINUTE`,
-  );
+  let online = 0;
+  try {
+    const on = await query<{ n: number }>(
+      `SELECT COUNT(*) AS n FROM radacct WHERE acctstoptime IS NULL
+         AND COALESCE(acctupdatetime, acctstarttime) > NOW() - INTERVAL 10 MINUTE`,
+    );
+    online = Number(on[0]?.n ?? 0);
+  } catch {
+    online = 0;
+  }
   const hariRow = dailyRows.find((d) => d.date === nowKey);
   const bulanRow = monthlyRows.find((m) => m.month === monthKey);
 
@@ -570,7 +595,8 @@ export async function report(): Promise<RadiusReport> {
     totalUsers: rows.length,
     used,
     unsold: Math.max(0, rows.length - used),
-    online: Number(on[0]?.n ?? 0),
+    online,
+    ...(pesanError ? { error: pesanError } : {}),
   };
 }
 
