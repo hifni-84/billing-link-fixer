@@ -57,6 +57,17 @@ BACKUP="${SITE}.bak"
 for f in /etc/nginx/sites-enabled/*; do
   [[ -e "$f" ]] || continue
   [[ "$(basename "$f")" == "billing-domain" ]] && continue
+  # Hanya billing yang boleh jadi server default (catch-all) port 80
+  if grep -q "default_server" "$f" 2>/dev/null; then
+    real="$(readlink -f "$f")"
+    if [[ "$(basename "$f")" == "default" ]]; then
+      echo "INFO: menonaktifkan site default Nginx"
+      rm -f "$f"
+      continue
+    fi
+    echo "INFO: melepas default_server dari $(basename "$f")"
+    sed -i 's/[[:space:]]default_server//g' "$real"
+  fi
   for d in "${DOMAINS[@]}"; do
     if grep -Eq "server_name[^;]*(^|[[:space:]])${d//./\\.}([[:space:]]|;)" "$f" 2>/dev/null; then
       echo "INFO: menonaktifkan konfigurasi bentrok: $(basename "$f")"
@@ -71,6 +82,30 @@ done
   echo "    listen 80;"
   echo "    listen [::]:80;"
   echo "    server_name ${DOMAINS[*]};"
+  echo ""
+  echo "    client_max_body_size 10m;"
+  echo ""
+  echo "    location /.well-known/acme-challenge/ { root /var/www/html; }"
+  echo ""
+  echo "    location / {"
+  echo "        proxy_pass http://127.0.0.1:${PORT};"
+  echo "        proxy_http_version 1.1;"
+  echo "        proxy_set_header Upgrade \$http_upgrade;"
+  echo "        proxy_set_header Connection \"upgrade\";"
+  echo "        proxy_set_header Host \$host;"
+  echo "        proxy_set_header X-Real-IP \$remote_addr;"
+  echo "        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;"
+  echo "        proxy_set_header X-Forwarded-Proto \$scheme;"
+  echo "        proxy_read_timeout 60s;"
+  echo "    }"
+  echo "}"
+  echo ""
+  echo "# Catch-all: IP lokal / domain lain tanpa konfigurasi tetap masuk ke billing,"
+  echo "# supaya tidak tertangkap aplikasi lain (mis. Mikhmon)."
+  echo "server {"
+  echo "    listen 80 default_server;"
+  echo "    listen [::]:80 default_server;"
+  echo "    server_name _;"
   echo ""
   echo "    client_max_body_size 10m;"
   echo ""
