@@ -25,6 +25,9 @@ ONLOGIN_ROS = (
     ':local da [:pic $d 8 10]; :local mn [:pick $ma ($mo - 1)]; :return ("$mn/$da/$y");} '
     'else={:return $d;}}; '
     ':local date [ /system clock get date ]; :local nd [$norm d=$date]; :local year [:pic $nd 7 11]; '
+    # $month WAJIB ada: dipakai oleh $record Mikhmon (owner="$month$year") untuk
+    # laporan Selling/Income. Tanpa ini skrip on-login error dan laporan kosong.
+    ':local month [:pic $nd 0 3]; '
     '/sys sch add name="$user" disable=no start-date=$date interval="VALIDITY"; :delay 5s; '
     ':local exp [ /sys sch get [ /sys sch find where name="$user" ] next-run]; '
     ':local le [len $exp]; :local out ("$nd $exp"); '
@@ -76,6 +79,13 @@ def php_bgservice_line():
     return "    $bgservice = '" + ros + "';\n"
 
 
+def php_record_line(line):
+    """Catatan penjualan Mikhmon memakai $date mentah dari router. Di ROS7
+    formatnya 2026-08-20 sehingga laporan Selling/Income tidak terbaca.
+    Ganti ke $nd (tanggal yang sudah dinormalkan ke aug/20/2026)."""
+    return line.replace("$date-|-", "$nd-|-").replace('source="$date"', 'source="$nd"')
+
+
 def patch_file(path):
     with io.open(path, "r", encoding="utf-8", errors="surrogateescape") as f:
         lines = f.readlines()
@@ -88,6 +98,11 @@ def patch_file(path):
         elif stripped.startswith("$bgservice = ':local"):
             lines[idx] = php_bgservice_line()
             changed = True
+        elif stripped.startswith("$record = "):
+            baru = php_record_line(line)
+            if baru != line:
+                lines[idx] = baru
+                changed = True
     if not changed:
         print("- lewati (pola tidak ditemukan): %s" % path)
         return
@@ -112,7 +127,7 @@ foreach ((array) $allusers as $u) {
 def patch_remove(path):
     with io.open(path, "r", encoding="utf-8", errors="surrogateescape") as f:
         src = f.read()
-    if "substr(\$c, -1) === 'X'" in src:
+    if "substr($c, -1) === 'X'" in src:
         print("- sudah dipatch: %s" % path)
         return
     marker = 'if ($_SESSION[\'ubp\']'
