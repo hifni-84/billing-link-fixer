@@ -1,0 +1,327 @@
+/* =====================================================================
+   Najwa Billing - Tema elegan untuk Mikhmon v3
+   Dipasang otomatis oleh deploy/apply-mikhmon-theme.sh
+   ===================================================================== */
+:root {
+  --nj-bg: #0f1620;
+  --nj-bg-2: #131c28;
+  --nj-card: #182231;
+  --nj-border: #24344a;
+  --nj-text: #e8eef6;
+  --nj-muted: #93a4b8;
+  --nj-primary: #2fd8a8;
+  --nj-primary-2: #35b7f2;
+  --nj-radius: 14px;
+}
+
+html,
+body {
+  background: var(--nj-bg) !important;
+  color: var(--nj-text) !important;
+  font-family: "Segoe UI", "Inter", system-ui, -apple-system, sans-serif !important;
+  letter-spacing: 0.1px;
+}
+
+body {
+  background-image:
+    radial-gradient(900px 460px at 8% -12%, rgba(47, 216, 168, 0.12), transparent 60%),
+    radial-gradient(700px 420px at 100% 0%, rgba(53, 183, 242, 0.12), transparent 60%) !important;
+  background-attachment: fixed !important;
+}
+
+/* ---------- Navbar / header ---------- */
+.navbar,
+.navbar-default,
+.navbar-inverse,
+nav.navbar {
+  background: rgba(19, 28, 40, 0.92) !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--nj-border) !important;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 10px 30px -22px rgba(0, 0, 0, 0.9);
+}
+.navbar a,
+.navbar .navbar-brand,
+.navbar .nav > li > a {
+  color: var(--nj-text) !important;
+  font-weight: 500;
+}
+.navbar .navbar-brand {
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  background: linear-gradient(90deg, var(--nj-primary), var(--nj-primary-2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.navbar .nav > li > a:hover,
+.navbar .nav > .active > a {
+  background: rgba(47, 216, 168, 0.12) !important;
+  color: var(--nj-primary) !important;
+  border-radius: 10px;
+}
+
+/* ---------- Sidebar ---------- */
+.sidebar,
+#sidebar,
+.side-nav,
+.sidenav {
+  background: var(--nj-bg-2) !important;
+  border-right: 1px solid var(--nj-border) !important;
+}
+
+/* ---------- Panel / card / well ---------- */
+.panel,
+.card,
+.well,
+.jumbotron,
+.list-group-item,
+.dropdown-menu,
+.modal-content,
+.thumbnail {
+  background: var(--nj-card) !important;
+  color: var(--nj-text) !important;
+  border: 1px solid var(--nj-border) !important;
+  border-radius: var(--nj-radius) !important;
+  box-shadow: 0 22px 50px -34px rgba(0, 0, 0, 0.95) !important;
+}
+.panel-heading,
+.card-header,
+.modal-header,
+.modal-footer {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent) !important;
+  border-color: var(--nj-border) !important;
+  color: var(--nj-text) !important;
+  font-weight: 600;
+}
+.panel-title,
+.card-title {
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+.panel-primary,
+.panel-success,
+.panel-info,
+.panel-warning,
+.panel-danger {
+  border-color: var(--nj-border) !important;
+}
+.panel-primary > .panel-heading {
+  background: linear-gradient(120deg, rgba(47, 216, 168, 0.22), rgba(53, 183, 242, 0.18)) !important;
+  color: #eafff8 !important;
+}
+
+/* ---------- Tabel ---------- */
+.table,
+table {
+  color: var(--nj-text) !important;
+  border-color: var(--nj-border) !important;
+}
+.table > thead > tr > th {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border-bottom: 1px solid var(--nj-border) !important;
+  color: var(--nj-muted) !important;
+  text-transform: uppercase;
+  font-size: 11.5px;
+  letter-spacing: 0.6px;
+}
+.table > tbody > tr > td,
+.table > tbody > tr > th {
+  border-color: rgba(255, 255, 255, 0.06) !important;
+  vertical-align: middle !important;
+}
+.table-striped > tbody > tr:nth-of-type(odd),
+.table-hover > tbody > tr:hover {
+  background: rgba(53, 183, 242, 0.07) !important;
+}
+.table-responsive {
+  border: 0 !important;
+  border-radius: var(--nj-radius);
+}
+
+/* ---------- Tombol ---------- */
+.btn {
+  border-radius: 10px !important;
+  font-weight: 600 !important;
+  border: 1px solid var(--nj-border) !important;
+  transition: transform 0.12s ease, filter 0.12s ease, box-shadow 0.12s ease;
+}
+.btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.06);
+}
+.btn-default {
+  background: #1e2a3b !important;
+  color: var(--nj-text) !important;
+}
+.btn-primary,
+.btn-info {
+  background: linear-gradient(120deg, var(--nj-primary), var(--nj-primary-2)) !important;
+  border-color: transparent !important;
+  color: #06231c !important;
+  box-shadow: 0 12px 26px -16px rgba(47, 216, 168, 0.8) !important;
+}
+.btn-success {
+  background: linear-gradient(120deg, #2fd8a8, #21b98e) !important;
+  border-color: transparent !important;
+  color: #06231c !important;
+}
+.btn-warning {
+  background: linear-gradient(120deg, #ffce5a, #f0a831) !important;
+  border-color: transparent !important;
+  color: #2b1e00 !important;
+}
+.btn-danger {
+  background: linear-gradient(120deg, #ff6b6b, #e33d5b) !important;
+  border-color: transparent !important;
+  color: #fff !important;
+}
+
+/* ---------- Form ---------- */
+.form-control,
+select,
+input,
+textarea {
+  background: #121a25 !important;
+  color: var(--nj-text) !important;
+  border: 1px solid var(--nj-border) !important;
+  border-radius: 10px !important;
+  box-shadow: none !important;
+}
+.form-control:focus,
+select:focus,
+input:focus,
+textarea:focus {
+  border-color: var(--nj-primary) !important;
+  box-shadow: 0 0 0 3px rgba(47, 216, 168, 0.18) !important;
+}
+.input-group-addon {
+  background: #1b2634 !important;
+  border-color: var(--nj-border) !important;
+  color: var(--nj-muted) !important;
+}
+label,
+.help-block,
+small,
+.text-muted {
+  color: var(--nj-muted) !important;
+}
+
+/* ---------- Label / badge ---------- */
+.label,
+.badge {
+  border-radius: 999px !important;
+  padding: 0.32em 0.75em !important;
+  font-weight: 600 !important;
+}
+.label-success,
+.badge {
+  background: rgba(47, 216, 168, 0.18) !important;
+  color: var(--nj-primary) !important;
+}
+.label-danger {
+  background: rgba(255, 107, 107, 0.18) !important;
+  color: #ff9a9a !important;
+}
+.label-warning {
+  background: rgba(255, 206, 90, 0.18) !important;
+  color: #ffd884 !important;
+}
+.label-info,
+.label-primary {
+  background: rgba(53, 183, 242, 0.18) !important;
+  color: #8fd8ff !important;
+}
+
+/* ---------- Nav tabs / pills ---------- */
+.nav-tabs {
+  border-bottom: 1px solid var(--nj-border) !important;
+}
+.nav-tabs > li > a {
+  color: var(--nj-muted) !important;
+  border: 0 !important;
+  border-radius: 10px 10px 0 0 !important;
+}
+.nav-tabs > li.active > a,
+.nav-tabs > li.active > a:hover,
+.nav-tabs > li.active > a:focus {
+  background: var(--nj-card) !important;
+  color: var(--nj-primary) !important;
+  border: 1px solid var(--nj-border) !important;
+  border-bottom-color: transparent !important;
+}
+.pagination > li > a,
+.pagination > li > span {
+  background: var(--nj-card) !important;
+  border-color: var(--nj-border) !important;
+  color: var(--nj-text) !important;
+}
+.pagination > .active > a {
+  background: var(--nj-primary) !important;
+  border-color: transparent !important;
+  color: #06231c !important;
+}
+
+/* ---------- Alert / progress ---------- */
+.alert {
+  border-radius: 12px !important;
+  border: 1px solid var(--nj-border) !important;
+  background: #1a2532 !important;
+  color: var(--nj-text) !important;
+}
+.progress {
+  background: #121a25 !important;
+  border-radius: 999px !important;
+  height: 10px !important;
+  box-shadow: none !important;
+}
+.progress-bar {
+  background: linear-gradient(90deg, var(--nj-primary), var(--nj-primary-2)) !important;
+}
+
+/* ---------- Link & misc ---------- */
+a {
+  color: var(--nj-primary-2);
+}
+a:hover {
+  color: var(--nj-primary);
+}
+hr {
+  border-color: var(--nj-border) !important;
+}
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: var(--nj-bg);
+}
+::-webkit-scrollbar-thumb {
+  background: #2a3a52;
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #35507a;
+}
+
+/* ---------- Halaman login ---------- */
+body.login,
+.login-box,
+.login-page {
+  background: transparent !important;
+}
+
+/* ---------- Cetak voucher tetap putih ---------- */
+@media print {
+  html,
+  body,
+  .panel,
+  .card,
+  table,
+  .table {
+    background: #fff !important;
+    color: #000 !important;
+    background-image: none !important;
+    box-shadow: none !important;
+  }
+}
