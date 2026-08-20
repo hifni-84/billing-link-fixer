@@ -37,16 +37,22 @@ STAMP="$(date +%Y%m%d%H%M%S)"
 COUNT=0
 while IFS= read -r f; do
   grep -q "$MARK" "$f" && continue
-  grep -qi '</body>' "$f" || continue
   cp -a "$f" "$f.bak-rfilter-$STAMP"
   rel="${f#$MIKHMON_DIR/}"
   depth=$(awk -F'/' '{print NF-1}' <<<"$rel")
   prefix=""
   for ((i = 0; i < depth; i++)); do prefix="../$prefix"; done
   tag="$MARK<script src=\"${prefix}${JS_REL}?v=$STAMP\"></script>"
-  sed -i "0,/[<]\/[bB][oO][dD][yY][>]/s||$tag\n</body>|" "$f"
+  if grep -qi '</body>' "$f"; then
+    sed -i "0,/[<]\/[bB][oO][dD][yY][>]/s||$tag\n</body>|" "$f"
+  elif grep -qi '</html>' "$f"; then
+    sed -i "0,/[<]\/[hH][tT][mM][lL][>]/s||$tag\n</html>|" "$f"
+  else
+    printf '\n%s\n' "$tag" >>"$f"
+  fi
   COUNT=$((COUNT + 1))
-done < <(grep -ril '</body>' "$MIKHMON_DIR" --include='*.php' 2>/dev/null)
+  echo "  + $rel"
+done < <(find "$MIKHMON_DIR" -maxdepth 2 -name '*.php' 2>/dev/null)
 
 echo "==> [3/3] Menyesuaikan pemilik file"
 chown -R www-data:www-data "$MIKHMON_DIR/js" 2>/dev/null || true
