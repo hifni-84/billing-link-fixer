@@ -21,6 +21,12 @@ if [[ "${1:-}" == "--undo" ]]; then
   grep -rl "$MARK" "$MIKHMON_DIR" --include='*.php' 2>/dev/null | while read -r f; do
     sed -i "\|$MARK|d" "$f"; echo "  - bersih: $f"
   done
+  # pulihkan backup jika ada (paling aman)
+  find "$MIKHMON_DIR" -name '*.bak-rfilter-*' 2>/dev/null | while read -r b; do
+    orig="${b%.bak-rfilter-*}"
+    cp -a "$b" "$orig" && rm -f "$b"
+    echo "  - pulih: $orig"
+  done
   rm -f "$MIKHMON_DIR/$JS_REL"
   echo "OK: filter dilepas. Tekan Ctrl+F5 di browser."
   exit 0
