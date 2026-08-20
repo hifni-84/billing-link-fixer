@@ -94,6 +94,11 @@ server {
         fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
         fastcgi_param PHP_VALUE "session.name=MIKHMON_${NAME}";
         include fastcgi_params;
+        fastcgi_read_timeout 600;
+        fastcgi_send_timeout 600;
+        fastcgi_connect_timeout 60;
+        fastcgi_buffers 16 32k;
+        fastcgi_buffer_size 64k;
     }
 
     location ~ /\.(ht|git|env) { deny all; }
