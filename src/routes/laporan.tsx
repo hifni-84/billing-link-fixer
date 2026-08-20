@@ -47,29 +47,60 @@ export const Route = createFileRoute("/laporan")({
 function LaporanPage() {
   const report = useRadiusReport();
   const [range, setRange] = useState("30");
+  const [plan, setPlan] = useState("all");
+
+  const planOptions = useMemo(
+    () => (report.data?.perPlan ?? []).map((p) => p.plan).sort((a, b) => a.localeCompare(b)),
+    [report.data],
+  );
 
   const view = useMemo(() => {
     const limit = Number(range);
-    const daily = report.data?.daily ?? [];
     const since =
       limit === 0 ? "" : new Date(Date.now() - limit * 86400000).toISOString().slice(0, 10);
-    const filtered = daily.filter((d) => limit === 0 || d.date >= since);
+    const dailyPlans = (report.data?.dailyPlans ?? []).filter(
+      (d) => (limit === 0 || d.date >= since) && (plan === "all" || d.plan === plan),
+    );
+
+    let filtered: { date: string; total: number; count: number }[];
+    if (plan === "all") {
+      filtered = (report.data?.daily ?? []).filter((d) => limit === 0 || d.date >= since);
+    } else {
+      const map = new Map<string, { total: number; count: number }>();
+      for (const d of dailyPlans) {
+        const cur = map.get(d.date) ?? { total: 0, count: 0 };
+        map.set(d.date, { total: cur.total + d.total, count: cur.count + d.count });
+      }
+      filtered = [...map.entries()].map(([date, v]) => ({ date, ...v }));
+    }
+
+    const perPlanMap = new Map<string, { total: number; count: number }>();
+    for (const d of dailyPlans) {
+      const cur = perPlanMap.get(d.plan) ?? { total: 0, count: 0 };
+      perPlanMap.set(d.plan, { total: cur.total + d.total, count: cur.count + d.count });
+    }
+    const perPlanRows = [...perPlanMap.entries()]
+      .map(([p, v]) => ({ plan: p, ...v }))
+      .sort((a, b) => b.count - a.count);
 
     return {
       rows: [...filtered].sort((a, b) => b.date.localeCompare(a.date)),
       chart: [...filtered]
         .sort((a, b) => a.date.localeCompare(b.date))
         .map((d) => ({ date: d.date.slice(5), total: d.total })),
-      perPlan: report.data?.perPlan ?? [],
+      perPlan: perPlanRows.length > 0 ? perPlanRows : plan === "all" ? (report.data?.perPlan ?? []) : [],
+      dailyPlans: [...dailyPlans].sort(
+        (a, b) => b.date.localeCompare(a.date) || b.count - a.count,
+      ),
       total: filtered.reduce((s, d) => s + d.total, 0),
       count: filtered.reduce((s, d) => s + d.count, 0),
       unsold: report.data?.unsold ?? 0,
     };
-  }, [report.data, range]);
+  }, [report.data, range, plan]);
 
   const exportCsv = () => {
-    const lines = ["tanggal,jumlah_voucher,pendapatan"];
-    for (const d of view.rows) lines.push(`${d.date},${d.count},${d.total}`);
+    const lines = ["tanggal,profil_voucher,jumlah_voucher,pendapatan"];
+    for (const d of view.dailyPlans) lines.push(`${d.date},${d.plan},${d.count},${d.total}`);
     const url = URL.createObjectURL(new Blob([lines.join("\n")], { type: "text/csv" }));
     const a = document.createElement("a");
     a.href = url;
@@ -96,10 +127,23 @@ function LaporanPage() {
                 <SelectItem value="0">Semua</SelectItem>
               </SelectContent>
             </Select>
+            <Select value={plan} onValueChange={setPlan}>
+              <SelectTrigger className="w-44">
+                <SelectValue placeholder="Profil voucher" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Semua profil</SelectItem>
+                {planOptions.map((p) => (
+                  <SelectItem key={p} value={p}>
+                    {p}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Button variant="outline" onClick={() => report.refetch()}>
               <RefreshCw className="size-4" /> Muat Ulang
             </Button>
-            <Button variant="outline" onClick={exportCsv} disabled={view.rows.length === 0}>
+            <Button variant="outline" onClick={exportCsv} disabled={view.dailyPlans.length === 0}>
               <Download className="size-4" /> CSV
             </Button>
           </div>
@@ -124,6 +168,9 @@ function LaporanPage() {
             Voucher Terjual
           </p>
           <p className="mono-num mt-2 text-2xl font-semibold">{view.count}</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Profil: {plan === "all" ? "semua profil" : plan}
+          </p>
         </div>
         <div className="panel p-5">
           <p className="text-xs uppercase tracking-widest text-muted-foreground">Stok Tersisa</p>
@@ -190,11 +237,13 @@ function LaporanPage() {
         </div>
 
         <div className="panel overflow-hidden">
-          <h2 className="border-b border-border p-4 text-sm font-semibold">Per Paket</h2>
+          <h2 className="border-b border-border p-4 text-sm font-semibold">
+            Total Terjual per Profil Voucher
+          </h2>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Paket</TableHead>
+                <TableHead>Profil</TableHead>
                 <TableHead>Terjual</TableHead>
                 <TableHead className="text-right">Pendapatan</TableHead>
               </TableRow>
@@ -217,6 +266,39 @@ function LaporanPage() {
             </TableBody>
           </Table>
         </div>
+      </div>
+
+      <div className="panel mt-6 overflow-hidden">
+        <h2 className="border-b border-border p-4 text-sm font-semibold">
+          Rincian Terjual per Tanggal &amp; Profil
+        </h2>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Tanggal</TableHead>
+              <TableHead>Profil</TableHead>
+              <TableHead>Terjual</TableHead>
+              <TableHead className="text-right">Pendapatan</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {view.dailyPlans.map((d) => (
+              <TableRow key={`${d.date}-${d.plan}`}>
+                <TableCell className="mono-num">{d.date}</TableCell>
+                <TableCell className="truncate">{d.plan}</TableCell>
+                <TableCell className="mono-num">{d.count}</TableCell>
+                <TableCell className="mono-num text-right">{formatIDR(d.total)}</TableCell>
+              </TableRow>
+            ))}
+            {view.dailyPlans.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={4} className="py-8 text-center text-muted-foreground">
+                  Belum ada penjualan pada filter ini.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
       </div>
     </>
   );
