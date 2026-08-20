@@ -3,14 +3,14 @@
  * simpan daftar domain, terapkan ke Nginx, dan pasang SSL otomatis.
  */
 import { useEffect, useState } from "react";
-import { Globe2, Loader2, Lock, LockOpen, Plus, ShieldCheck, Trash2, Wand2 } from "lucide-react";
+import { Globe2, Loader2, Lock, LockOpen, Plus, ShieldCheck, Trash2, Wand2, Server } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { domainApplySave, domainStatusGet } from "@/lib/domain.functions";
+import { domainApplySave, domainStatusGet, mikhmonApplySave, mikhmonStatusGet } from "@/lib/domain.functions";
 
 export function DomainManager() {
   const [domains, setDomains] = useState<string[]>([""]);
@@ -24,6 +24,33 @@ export function DomainManager() {
   const [publicIp, setPublicIp] = useState<string | null>(null);
   const [suggested, setSuggested] = useState<string | null>(null);
   const [certs, setCerts] = useState<{ domain: string; installed: boolean }[]>([]);
+
+  // --- Mikhmon ---
+  const [mkDomain, setMkDomain] = useState("");
+  const [mkEmail, setMkEmail] = useState("");
+  const [mkHttps, setMkHttps] = useState(true);
+  const [mkReady, setMkReady] = useState(true);
+  const [mkSetupCmd, setMkSetupCmd] = useState("");
+  const [mkCert, setMkCert] = useState(false);
+  const [mkRootOk, setMkRootOk] = useState(true);
+  const [mkBusy, setMkBusy] = useState(false);
+  const [mkLog, setMkLog] = useState("");
+
+  useEffect(() => {
+    void mikhmonStatusGet()
+      .then((r) => {
+        if (!r.ok || !r.status) return;
+        const s = r.status;
+        setMkDomain(s.domain || "");
+        setMkEmail(s.email);
+        setMkHttps(s.https);
+        setMkReady(s.ready);
+        setMkSetupCmd(s.setupCommand);
+        setMkCert(s.certInstalled);
+        setMkRootOk(s.mikhmonRootExists);
+      })
+      .catch(() => undefined);
+  }, []);
 
   useEffect(() => {
     void domainStatusGet()
@@ -79,6 +106,34 @@ export function DomainManager() {
     setDomains((cur) => [suggested, ...cur.filter((d) => d.trim() && d.trim() !== suggested)]);
     setHttps(true);
     toast.success(`Domain gratis ${suggested} dipakai sebagai domain utama`);
+  };
+
+  const applyMikhmon = async () => {
+    if (!mkDomain.trim()) {
+      toast.error("Isi nama domain untuk Mikhmon");
+      return;
+    }
+    setMkBusy(true);
+    setMkLog("");
+    try {
+      const res = await mikhmonApplySave({
+        data: { domain: mkDomain, email: mkEmail, https: mkHttps },
+      });
+      setMkLog(res.log || res.error || "");
+      if (res.error) toast.error(res.error);
+      else if (res.ok) toast.success("Domain Mikhmon diterapkan ke server");
+      else toast.error("Domain tersimpan, tapi penerapan di server gagal");
+      const st = await mikhmonStatusGet();
+      if (st.ok && st.status) {
+        setMkReady(st.status.ready);
+        setMkCert(st.status.certInstalled);
+        setMkRootOk(st.status.mikhmonRootExists);
+      }
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setMkBusy(false);
+    }
   };
 
   const certOf = (d: string) => certs.find((c) => c.domain === d.trim().toLowerCase());
@@ -209,6 +264,100 @@ export function DomainManager() {
           {log}
         </pre>
       )}
+
+      {/* ===================== MIKHMON ===================== */}
+      <div className="mt-8 border-t border-border pt-6">
+        <div className="mb-1 flex items-center gap-2">
+          <Server className="size-4 text-primary" />
+          <h2 className="text-sm font-semibold">Domain & SSL Mikhmon</h2>
+        </div>
+        <p className="mb-4 text-xs text-muted-foreground">
+          Pasang domain sendiri (mis. <span className="mono-num">mybillingg.com</span>) untuk
+          Mikhmon, lengkap dengan HTTPS otomatis. Mikhmon akan tetap bisa diakses di port 8080,
+          domain ini hanya menambah jalur akses lewat nama.
+        </p>
+
+        {!mkRootOk && (
+          <div className="mb-4 rounded-md border border-red-500/40 bg-red-500/10 p-3 text-xs">
+            <p className="font-medium">Mikhmon belum terpasang</p>
+            <p className="mt-1 text-muted-foreground">
+              Folder <code className="mono-num">/var/www/mikhmon</code> belum ada. Pasang Mikhmon
+              dulu di server sebelum menambah domain.
+            </p>
+          </div>
+        )}
+
+        {!mkReady && (
+          <div className="mb-4 rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-xs">
+            <p className="font-medium">Izin server Mikhmon belum aktif</p>
+            <p className="mt-1 text-muted-foreground">
+              Jalankan perintah ini <span className="font-medium">satu kali saja</span> di server:
+            </p>
+            <code className="mono-num mt-2 block break-all rounded bg-background/70 p-2">
+              {mkSetupCmd || "sudo bash /opt/mikrotik-billing/deploy/allow-mikhmon-sudo.sh"}
+            </code>
+          </div>
+        )}
+
+        <div className="grid gap-3">
+          <div className="grid gap-2">
+            <Label htmlFor="mk-domain">Domain Mikhmon</Label>
+            <Input
+              id="mk-domain"
+              placeholder="mybillingg.com"
+              value={mkDomain}
+              onChange={(e) => setMkDomain(e.target.value)}
+            />
+            {mkDomain.trim() && (
+              <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                {mkCert ? (
+                  <>
+                    <Lock className="size-3 text-emerald-500" /> HTTPS aktif
+                  </>
+                ) : (
+                  <>
+                    <LockOpen className="size-3 text-amber-500" /> Belum ada sertifikat
+                  </>
+                )}
+              </p>
+            )}
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="mk-email">Email untuk sertifikat SSL</Label>
+            <Input
+              id="mk-email"
+              placeholder="admin@domain-anda.com"
+              value={mkEmail}
+              onChange={(e) => setMkEmail(e.target.value)}
+            />
+          </div>
+        </div>
+
+        <div className="mt-4 flex items-center justify-between gap-4 border-t border-border pt-4">
+          <div>
+            <p className="text-sm font-medium">Pasang HTTPS otomatis (Let's Encrypt)</p>
+            <p className="text-xs text-muted-foreground">
+              Pastikan DNS domain sudah diarahkan ke IP server ini sebelum diterapkan.
+            </p>
+          </div>
+          <Switch checked={mkHttps} onCheckedChange={setMkHttps} aria-label="Pasang HTTPS Mikhmon" />
+        </div>
+
+        <Button
+          className="mt-4"
+          disabled={mkBusy}
+          onClick={() => void applyMikhmon()}
+        >
+          {mkBusy ? <Loader2 className="size-4 animate-spin" /> : <ShieldCheck className="size-4" />}
+          {mkBusy ? "Menerapkan…" : "Simpan & Terapkan Domain Mikhmon"}
+        </Button>
+
+        {mkLog && (
+          <pre className="mono-num mt-4 max-h-56 overflow-auto whitespace-pre-wrap rounded-md bg-secondary/60 p-3 text-xs">
+            {mkLog}
+          </pre>
+        )}
+      </div>
     </div>
   );
 }
