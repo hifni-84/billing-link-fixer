@@ -79,6 +79,13 @@ def php_bgservice_line():
     return "    $bgservice = '" + ros + "';\n"
 
 
+def php_record_line(line):
+    """Catatan penjualan Mikhmon memakai $date mentah dari router. Di ROS7
+    formatnya 2026-08-20 sehingga laporan Selling/Income tidak terbaca.
+    Ganti ke $nd (tanggal yang sudah dinormalkan ke aug/20/2026)."""
+    return line.replace("$date-|-", "$nd-|-").replace('source="$date"', 'source="$nd"')
+
+
 def patch_file(path):
     with io.open(path, "r", encoding="utf-8", errors="surrogateescape") as f:
         lines = f.readlines()
@@ -91,6 +98,11 @@ def patch_file(path):
         elif stripped.startswith("$bgservice = ':local"):
             lines[idx] = php_bgservice_line()
             changed = True
+        elif stripped.startswith("$record = "):
+            baru = php_record_line(line)
+            if baru != line:
+                lines[idx] = baru
+                changed = True
     if not changed:
         print("- lewati (pola tidak ditemukan): %s" % path)
         return
