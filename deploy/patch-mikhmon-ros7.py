@@ -127,7 +127,7 @@ foreach ((array) $allusers as $u) {
 def patch_remove(path):
     with io.open(path, "r", encoding="utf-8", errors="surrogateescape") as f:
         src = f.read()
-    if "substr(\$c, -1) === 'X'" in src:
+    if "substr($c, -1) === 'X'" in src:
         print("- sudah dipatch: %s" % path)
         return
     marker = 'if ($_SESSION[\'ubp\']'
