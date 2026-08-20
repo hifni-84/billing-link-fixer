@@ -22,3 +22,26 @@ export const domainApplySave = createServerFn({ method: "POST" })
       return { ok: false as const, log: "", error: (e as Error).message };
     }
   });
+
+export const mikhmonStatusGet = createServerFn({ method: "GET" }).handler(async () => {
+  try {
+    const { mikhmonStatus } = await import("./domain.server");
+    return { ok: true as const, status: await mikhmonStatus(), error: null as string | null };
+  } catch (e) {
+    return { ok: false as const, status: null, error: (e as Error).message };
+  }
+});
+
+export const mikhmonApplySave = createServerFn({ method: "POST" })
+  .inputValidator(
+    (d: { domain: string; email: string; https: boolean }) => d,
+  )
+  .handler(async ({ data }) => {
+    try {
+      const { mikhmonApply } = await import("./domain.server");
+      const res = await mikhmonApply(data);
+      return { ok: res.ok, log: res.log, error: null as string | null };
+    } catch (e) {
+      return { ok: false as const, log: "", error: (e as Error).message };
+    }
+  });
