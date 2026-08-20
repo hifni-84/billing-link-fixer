@@ -6,25 +6,8 @@
 (function () {
   "use strict";
 
-  function isReportPage() {
-    var q = (location.search || "").toLowerCase();
-    var body = (document.body && document.body.innerText || "").toLowerCase();
-    return /id=(report|sales|log)/.test(q) || /report/.test(q) ||
-      body.indexOf("total sales") >= 0 || body.indexOf("laporan") >= 0;
-  }
-
   function textOf(el) {
-    return (el.textContent || "").replace(/\s+/g, " ").trim();
-  }
-
-  function findIndex(headCells, keywords) {
-    for (var i = 0; i < headCells.length; i++) {
-      var t = textOf(headCells[i]).toLowerCase();
-      for (var k = 0; k < keywords.length; k++) {
-        if (t.indexOf(keywords[k]) >= 0) return i;
-      }
-    }
-    return -1;
+    return ((el && el.textContent) || "").replace(/\s+/g, " ").trim();
   }
 
   function parseMoney(str) {
@@ -36,42 +19,64 @@
     return n.toLocaleString("id-ID");
   }
 
+  function idxOf(cells, keywords) {
+    for (var i = 0; i < cells.length; i++) {
+      var t = textOf(cells[i]).toLowerCase();
+      for (var k = 0; k < keywords.length; k++) {
+        if (t === keywords[k] || t.indexOf(keywords[k]) >= 0) return i;
+      }
+    }
+    return -1;
+  }
+
+  /* cari baris header (bisa di thead ATAU di tbody seperti report Mikhmon) */
+  function findHeader(table) {
+    var rows = [].slice.call(table.rows || []);
+    for (var i = 0; i < rows.length; i++) {
+      var cells = [].slice.call(rows[i].cells || []);
+      if (cells.length < 3) continue;
+      var pi = idxOf(cells, ["profile", "profil", "paket", "plan"]);
+      if (pi < 0) continue;
+      // pastikan baris ini benar-benar header (ada kolom lain khas header)
+      var looksHeader =
+        idxOf(cells, ["username", "user", "date", "tanggal", "time"]) >= 0;
+      if (!looksHeader) continue;
+      return { rowIndex: i, cells: cells, profileIdx: pi,
+        priceIdx: idxOf(cells, ["price", "harga"]) };
+    }
+    return null;
+  }
+
   function enhance(table) {
     if (table.getAttribute("data-najwa-filter") === "1") return;
-    var headRow = table.querySelector("thead tr");
-    if (!headRow) return;
-    var headCells = headRow.querySelectorAll("th,td");
-    var profileIdx = findIndex(headCells, ["profile", "profil", "paket", "plan"]);
-    if (profileIdx < 0) return;
-    var priceIdx = findIndex(headCells, ["price", "harga", "total"]);
-    var bodyRows = [].slice.call(table.querySelectorAll("tbody tr"));
+    var h = findHeader(table);
+    if (!h) return;
+    var rows = [].slice.call(table.rows || []);
+    var bodyRows = rows.slice(h.rowIndex + 1).filter(function (tr) {
+      var c = tr.cells;
+      if (!c || !c[h.profileIdx]) return false;
+      var v = textOf(c[h.profileIdx]);
+      return v.length > 0;
+    });
     if (bodyRows.length === 0) return;
     table.setAttribute("data-najwa-filter", "1");
 
-    // kumpulkan daftar profil unik
-    var seen = {};
-    var profiles = [];
+    var seen = {}, profiles = [];
     bodyRows.forEach(function (tr) {
-      var cells = tr.querySelectorAll("td,th");
-      if (!cells[profileIdx]) return;
-      var v = textOf(cells[profileIdx]);
-      if (!v || seen[v]) return;
-      seen[v] = true;
-      profiles.push(v);
+      var v = textOf(tr.cells[h.profileIdx]);
+      if (!seen[v]) { seen[v] = true; profiles.push(v); }
     });
     profiles.sort();
-    if (profiles.length === 0) return;
 
-    // bar filter
     var bar = document.createElement("div");
     bar.className = "najwa-filter-bar";
     bar.style.cssText =
       "display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:10px 0;" +
-      "padding:10px 12px;border-radius:10px;background:rgba(127,127,127,.12);font-size:14px";
+      "padding:10px 12px;border-radius:10px;background:rgba(127,127,127,.14);font-size:14px";
 
     var label = document.createElement("label");
     label.textContent = "Filter Profil Voucher:";
-    label.style.cssText = "font-weight:600";
+    label.style.cssText = "font-weight:600;margin:0";
 
     var select = document.createElement("select");
     select.className = "form-control";
@@ -82,58 +87,56 @@
     select.appendChild(optAll);
     profiles.forEach(function (p) {
       var o = document.createElement("option");
-      o.value = p;
-      o.textContent = p;
+      o.value = p; o.textContent = p;
       select.appendChild(o);
     });
 
     var summary = document.createElement("span");
-    summary.style.cssText = "margin-left:auto;font-weight:600";
+    summary.style.cssText = "margin-left:auto;font-weight:700";
 
     bar.appendChild(label);
     bar.appendChild(select);
     bar.appendChild(summary);
 
     function apply() {
-      var want = select.value;
-      var count = 0;
-      var sum = 0;
+      var want = select.value, count = 0, sum = 0;
       bodyRows.forEach(function (tr) {
-        var cells = tr.querySelectorAll("td,th");
-        if (!cells[profileIdx]) return;
-        var v = textOf(cells[profileIdx]);
+        var v = textOf(tr.cells[h.profileIdx]);
         var show = want === "__all__" || v === want;
         tr.style.display = show ? "" : "none";
         if (show) {
           count++;
-          if (priceIdx >= 0 && cells[priceIdx]) sum += parseMoney(textOf(cells[priceIdx]));
+          if (h.priceIdx >= 0 && tr.cells[h.priceIdx])
+            sum += parseMoney(textOf(tr.cells[h.priceIdx]));
         }
       });
-      summary.textContent =
-        "Total terjual: " + count + (priceIdx >= 0 ? " | Total: Rp " + formatMoney(sum) : "");
+      summary.textContent = "Total terjual: " + count +
+        (h.priceIdx >= 0 ? " | Total: Rp " + formatMoney(sum) : "");
     }
 
     select.addEventListener("change", apply);
-    var parent = table.parentNode;
-    parent.insertBefore(bar, table);
+    var host = table.closest(".table-responsive") || table;
+    host.parentNode.insertBefore(bar, host);
     apply();
   }
 
   function run() {
-    if (!isReportPage()) return;
-    [].slice.call(document.querySelectorAll("table")).forEach(enhance);
+    [].slice.call(document.querySelectorAll("table")).forEach(function (t) {
+      try { enhance(t); } catch (e) {}
+    });
   }
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", run);
-  } else {
-    run();
-  }
-  // Mikhmon memuat sebagian tabel via ajax -> coba ulang beberapa kali
+  } else { run(); }
+
   var tries = 0;
   var timer = setInterval(function () {
-    tries++;
-    run();
-    if (tries > 20) clearInterval(timer);
-  }, 700);
+    tries++; run();
+    if (tries > 40) clearInterval(timer);
+  }, 600);
+  if (window.MutationObserver) {
+    new MutationObserver(function () { run(); })
+      .observe(document.documentElement, { childList: true, subtree: true });
+  }
 })();
