@@ -25,6 +25,9 @@ ONLOGIN_ROS = (
     ':local da [:pic $d 8 10]; :local mn [:pick $ma ($mo - 1)]; :return ("$mn/$da/$y");} '
     'else={:return $d;}}; '
     ':local date [ /system clock get date ]; :local nd [$norm d=$date]; :local year [:pic $nd 7 11]; '
+    # $month WAJIB ada: dipakai oleh $record Mikhmon (owner="$month$year") untuk
+    # laporan Selling/Income. Tanpa ini skrip on-login error dan laporan kosong.
+    ':local month [:pic $nd 0 3]; '
     '/sys sch add name="$user" disable=no start-date=$date interval="VALIDITY"; :delay 5s; '
     ':local exp [ /sys sch get [ /sys sch find where name="$user" ] next-run]; '
     ':local le [len $exp]; :local out ("$nd $exp"); '
