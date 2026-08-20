@@ -48,7 +48,8 @@ while IFS= read -r f; do
   elif grep -qi '</html>' "$f"; then
     sed -i "0,/[<]\/[hH][tT][mM][lL][>]/s||$tag\n</html>|" "$f"
   else
-    printf '\n%s\n' "$tag" >>"$f"
+    rm -f "$f.bak-rfilter-$STAMP"
+    continue
   fi
   COUNT=$((COUNT + 1))
   echo "  + $rel"
