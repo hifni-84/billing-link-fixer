@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Patch Mikhmon v3 supaya penghapusan voucher expired jalan di RouterOS v6 DAN v7,
-sekaligus menambahkan huruf "N" di akhir comment voucher yang sudah expired.
+sekaligus menambahkan huruf "N" di akhir comment voucher segera setelah user login.
+Voucher yang sudah kedaluwarsa ditandai huruf "X" lalu dinonaktifkan/dihapus.
 
 Pakai:  sudo python3 patch-mikhmon-ros7.py /var/www/mikhmon
 """
@@ -30,7 +31,7 @@ ONLOGIN_ROS = (
     ':if ($le = 15) do={:set out ("$[:pic $exp 0 6]/$year $[:pic $exp 7 15]");}; '
     ':if ($le > 15) do={:local sp [:find $exp " "]; :local dp [:pic $exp 0 $sp]; '
     ':local tp [:pic $exp ($sp + 1) [len $exp]]; :set out ("$[$norm d=$dp] $tp");}; '
-    '/ip hotspot user set comment="$out" [find where name="$user"]; '
+    '/ip hotspot user set comment=("$out"."N") [find where name="$user"]; '
     ':delay 5s; /sys sch remove [find where name="$user"]'
 )
 
@@ -48,7 +49,7 @@ BGSERVICE_ROS = (
     ':foreach i in [ /ip hotspot user find where profile="PROFILE" ] do={ '
     ':local comment [ /ip hotspot user get $i comment]; :local name [ /ip hotspot user get $i name]; '
     ':local ln [len $comment]; '
-    ':if ($ln > 9 and [:pic $comment ($ln - 1) $ln] != "N") do={ '
+    ':if ($ln > 9 and [:pic $comment ($ln - 1) $ln] != "X") do={ '
     ':local ok false; '
     ':if ([:pic $comment 3] = "/" and [:pic $comment 6] = "/") do={:set ok true;}; '
     ':if ([:pic $comment 4] = "-" and [:pic $comment 7] = "-") do={:set ok true;}; '
@@ -56,7 +57,7 @@ BGSERVICE_ROS = (
     ':local dpart [:pic $comment 0 $sp]; :local tpart [:pic $comment ($sp + 1) $ln]; '
     ':local expd [$dateint d=$dpart]; :local expt [$timeint t=$tpart]; '
     ':if ($expd < $today or ($expd = $today and $expt <= $curtime)) do={ '
-    '/ip hotspot user set comment=("$comment"."N") $i; '
+    '/ip hotspot user set comment=("$comment"."X") $i; '
     '[ /ip hotspot user MODE $i ]; '
     '[ /ip hotspot active remove [find where user=$name] ];}}}}'
 )
@@ -97,11 +98,11 @@ def patch_file(path):
 
 
 REMOVE_EXTRA = """
-// --- tambahan: hapus juga user yang comment-nya diakhiri "N" (expired, ROS6/ROS7) ---
+// --- tambahan: hapus juga user yang comment-nya diakhiri "X" (expired, ROS6/ROS7) ---
 $allusers = $API->comm("/ip/hotspot/user/print");
 foreach ((array) $allusers as $u) {
   $c = isset($u['comment']) ? $u['comment'] : '';
-  if ($c !== '' && substr($c, -1) === 'N') {
+  if ($c !== '' && substr($c, -1) === 'X') {
     $API->comm("/ip/hotspot/user/remove", array(".id" => $u['.id']));
   }
 }
@@ -111,7 +112,7 @@ foreach ((array) $allusers as $u) {
 def patch_remove(path):
     with io.open(path, "r", encoding="utf-8", errors="surrogateescape") as f:
         src = f.read()
-    if 'substr($c, -1)' in src:
+    if "substr(\$c, -1) === 'X'" in src:
         print("- sudah dipatch: %s" % path)
         return
     marker = 'if ($_SESSION[\'ubp\']'
