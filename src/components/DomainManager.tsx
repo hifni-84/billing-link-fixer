@@ -3,14 +3,14 @@
  * simpan daftar domain, terapkan ke Nginx, dan pasang SSL otomatis.
  */
 import { useEffect, useState } from "react";
-import { Globe2, Loader2, Lock, LockOpen, Plus, ShieldCheck, Trash2, Wand2 } from "lucide-react";
+import { Globe2, Loader2, Lock, LockOpen, Plus, ShieldCheck, Trash2, Wand2, Server } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { domainApplySave, domainStatusGet } from "@/lib/domain.functions";
+import { domainApplySave, domainStatusGet, mikhmonApplySave, mikhmonStatusGet } from "@/lib/domain.functions";
 
 export function DomainManager() {
   const [domains, setDomains] = useState<string[]>([""]);
