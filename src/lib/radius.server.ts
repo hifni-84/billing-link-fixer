@@ -1054,11 +1054,19 @@ async function ensureSettingTable() {
   await query(
     `CREATE TABLE IF NOT EXISTS billing_setting (
        skey VARCHAR(64) NOT NULL PRIMARY KEY,
-       svalue TEXT NOT NULL
+       svalue LONGTEXT NOT NULL
      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
   );
+  // Tabel lama memakai TEXT (maks 64 KB) sehingga template voucher panjang
+  // gagal disimpan ("Data too long for column 'svalue'"). Naikkan ke LONGTEXT.
+  try {
+    await query("ALTER TABLE billing_setting MODIFY svalue LONGTEXT NOT NULL");
+  } catch {
+    /* kolom sudah LONGTEXT atau tidak ada izin ALTER */
+  }
   settingReady = true;
 }
+
 
 export async function getSettings(): Promise<Record<string, string>> {
   await ensureSettingTable();
