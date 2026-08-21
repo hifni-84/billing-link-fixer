@@ -76,13 +76,13 @@ import {
 export const Route = createFileRoute("/pengaturan")({
   head: () => ({
     meta: [
-      { title: "Pengaturan Router — NAJWA_BILLING" },
+      { title: "Pengaturan Router — BILLING RADIUS" },
       {
         name: "description",
         content:
           "Hubungkan panel billing ke RouterOS melalui REST API: alamat IP, port, username, dan password.",
       },
-      { property: "og:title", content: "Pengaturan Router — NAJWA_BILLING" },
+      { property: "og:title", content: "Pengaturan Router — BILLING RADIUS" },
       {
         property: "og:description",
         content: "Konfigurasi koneksi RouterOS REST API untuk panel billing hotspot.",

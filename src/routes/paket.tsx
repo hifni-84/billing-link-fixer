@@ -34,13 +34,13 @@ import { useRouters } from "@/lib/routers-store";
 export const Route = createFileRoute("/paket")({
   head: () => ({
     meta: [
-      { title: "Paket Bandwidth — NAJWA_BILLING" },
+      { title: "Paket Bandwidth — BILLING RADIUS" },
       {
         name: "description",
         content:
           "Kelola paket hotspot dan PPPoE: bandwidth, masa aktif, shared users, harga modal dan harga jual.",
       },
-      { property: "og:title", content: "Paket Bandwidth — NAJWA_BILLING" },
+      { property: "og:title", content: "Paket Bandwidth — BILLING RADIUS" },
       {
         property: "og:description",
         content: "Tambah, ubah, dan hapus paket billing RADIUS.",

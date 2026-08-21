@@ -26,13 +26,13 @@ import { useRadiusReport } from "@/lib/radius-client";
 export const Route = createFileRoute("/laporan")({
   head: () => ({
     meta: [
-      { title: "Laporan Pendapatan — NAJWA_BILLING" },
+      { title: "Laporan Pendapatan — BILLING RADIUS" },
       {
         name: "description",
         content:
           "Laporan penjualan voucher hotspot: pendapatan harian, rekap per paket, dan ekspor CSV.",
       },
-      { property: "og:title", content: "Laporan Pendapatan — NAJWA_BILLING" },
+      { property: "og:title", content: "Laporan Pendapatan — BILLING RADIUS" },
       {
         property: "og:description",
         content: "Rekap omzet voucher hotspot harian dan per paket, lengkap dengan ekspor CSV.",

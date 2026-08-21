@@ -31,7 +31,7 @@ function LoginScreen() {
           <span className="flex size-12 items-center justify-center rounded-full bg-secondary text-primary">
             <LockKeyhole className="size-6" />
           </span>
-          <h1 className="text-xl font-semibold tracking-tight">NAJWA_BILLING</h1>
+          <h1 className="text-xl font-semibold tracking-tight">BILLING RADIUS</h1>
           <p className="text-sm text-muted-foreground">Masuk untuk mengelola hotspot & PPPoE</p>
         </div>
         <div className="grid gap-4">

@@ -9,13 +9,13 @@ import { formatIDR } from "@/lib/mikrotik-types";
 export const Route = createFileRoute("/radius")({
   head: () => ({
     meta: [
-      { title: "Billing RADIUS — NAJWA_BILLING" },
+      { title: "Billing RADIUS — BILLING RADIUS" },
       {
         name: "description",
         content:
           "Ringkasan billing FreeRADIUS: status database, jumlah user, sesi online, dan pendapatan.",
       },
-      { property: "og:title", content: "Billing RADIUS — NAJWA_BILLING" },
+      { property: "og:title", content: "Billing RADIUS — BILLING RADIUS" },
       {
         property: "og:description",
         content: "Panel RADIUS: status database dan ringkasan pendapatan.",
@@ -35,7 +35,7 @@ function RadiusPage() {
   return (
     <>
       <PageHeader
-        title="NBR"
+        title="NBS"
         description="Billing Radius Untuk Management Hotspot Dan PPPoE."
         action={
           <Button

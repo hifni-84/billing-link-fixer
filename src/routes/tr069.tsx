@@ -35,13 +35,13 @@ import type { AcsDevice } from "@/lib/genieacs-types";
 export const Route = createFileRoute("/tr069")({
   head: () => ({
     meta: [
-      { title: "TR-069 GenieACS — NAJWA_BILLING" },
+      { title: "TR-069 GenieACS — BILLING RADIUS" },
       {
         name: "description",
         content:
           "Kelola semua parameter TR-069 ONU ZTE, Huawei, dan VSOL: tambah WAN, atur VLAN, ganti SSID, dan pantau total user aktif dari satu panel.",
       },
-      { property: "og:title", content: "TR-069 GenieACS — NAJWA_BILLING" },
+      { property: "og:title", content: "TR-069 GenieACS — BILLING RADIUS" },
       {
         property: "og:description",
         content:
