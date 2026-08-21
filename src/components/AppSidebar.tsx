@@ -18,7 +18,7 @@ import {
 
 } from "lucide-react";
 
-import nrLogo from "@/assets/nr-logo.png";
+import nbsLogo from "@/assets/nbs-logo.png";
 
 import {
   Sidebar,
@@ -63,7 +63,7 @@ export function AppSidebar() {
       <SidebarHeader className="border-b border-sidebar-border px-3 py-4">
         <div className="flex items-center gap-3">
           <img
-            src={nrLogo}
+            src={nbsLogo}
             alt="NR Logo"
             className="size-9 shrink-0 rounded-xl object-cover shadow-lg shadow-primary/25"
           />

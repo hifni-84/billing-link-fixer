@@ -11,7 +11,7 @@ import {
 import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
-import nrLogo from "@/assets/nr-logo.png";
+import nbsLogo from "@/assets/nbs-logo.png";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AuthGate } from "@/components/AuthGate";
 import { LicenseGate } from "@/components/LicenseGate";
@@ -163,7 +163,7 @@ function RootComponent() {
             <ReadOnlyGuard />
             <header className="no-print sticky top-0 z-20 flex h-14 items-center gap-3 border-b border-border bg-background/80 px-4 backdrop-blur">
               <SidebarTrigger />
-              <img src={nrLogo} alt="NR" className="size-6 rounded-md object-cover" />
+              <img src={nbsLogo} alt="NBS" className="size-6 rounded-md object-cover" />
               <span className="text-sm font-semibold tracking-tight text-foreground">
                 NAJWA_BILLING
               </span>
