@@ -35,8 +35,8 @@ function RadiusPage() {
   return (
     <>
       <PageHeader
-        title="Billing RADIUS"
-        description="Semua user & voucher tersimpan di database FreeRADIUS."
+        title="NBR"
+        description="Billing Radius Untuk Management Hotspot Dan PPPoE."
         action={
           <Button
             variant="outline"

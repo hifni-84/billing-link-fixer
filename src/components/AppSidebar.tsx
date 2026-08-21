@@ -70,7 +70,7 @@ export function AppSidebar() {
           {!collapsed && (
             <div className="leading-tight">
               <p className="text-sm font-semibold tracking-tight">NAJWA_BILLING</p>
-              <p className="text-[11px] text-muted-foreground">Billing RADIUS</p>
+              <p className="text-[11px] text-muted-foreground">NBR</p>
             </div>
           )}
         </div>
