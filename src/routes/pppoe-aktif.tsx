@@ -17,13 +17,13 @@ import { formatBytes, formatDateTime, formatDuration } from "@/lib/mikrotik-type
 export const Route = createFileRoute("/pppoe-aktif")({
   head: () => ({
     meta: [
-      { title: "User PPPoE Aktif — NAJWA_BILLING" },
+      { title: "User PPPoE Aktif — BILLING RADIUS" },
       {
         name: "description",
         content:
           "Daftar user PPPoE yang sedang online: IP, MAC, NAS, durasi sesi, dan pemakaian data.",
       },
-      { property: "og:title", content: "User PPPoE Aktif — NAJWA_BILLING" },
+      { property: "og:title", content: "User PPPoE Aktif — BILLING RADIUS" },
       {
         property: "og:description",
         content: "Pantau sesi PPPoE aktif dari database FreeRADIUS.",

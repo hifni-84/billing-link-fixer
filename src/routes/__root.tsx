@@ -86,14 +86,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "NAJWA_BILLING — Billing Hotspot MikroTik" },
+      { title: "BILLING RADIUS — Billing Hotspot MikroTik" },
       {
         name: "description",
         content:
           "Kelola profil bandwidth, generate dan cetak voucher, pantau user aktif, serta lihat laporan pendapatan hotspot MikroTik.",
       },
-      { name: "author", content: "NAJWA_BILLING" },
-      { property: "og:title", content: "NAJWA_BILLING — Billing Hotspot MikroTik" },
+      { name: "author", content: "BILLING RADIUS" },
+      { property: "og:title", content: "BILLING RADIUS — Billing Hotspot MikroTik" },
       {
         property: "og:description",
         content: "Panel billing hotspot MikroTik: profil, voucher, user aktif, dan laporan.",
@@ -165,7 +165,7 @@ function RootComponent() {
               <SidebarTrigger />
               <img src={nbsLogo} alt="NBS" className="size-6 rounded-md object-cover" />
               <span className="text-sm font-semibold tracking-tight text-foreground">
-                NAJWA_BILLING
+                BILLING RADIUS
               </span>
               <span className="text-xs text-muted-foreground">· Hotspot & PPPoE</span>
             </header>

@@ -68,13 +68,13 @@ import { useCreds } from "@/lib/router-store";
 export const Route = createFileRoute("/voucher")({
   head: () => ({
     meta: [
-      { title: "Voucher & User — NAJWA_BILLING" },
+      { title: "Voucher & User — BILLING RADIUS" },
       {
         name: "description",
         content:
           "Generate voucher hotspot ke database RADIUS, cari dan filter kode voucher, serta cetak sesuai template A4.",
       },
-      { property: "og:title", content: "Voucher & User — NAJWA_BILLING" },
+      { property: "og:title", content: "Voucher & User — BILLING RADIUS" },
       {
         property: "og:description",
         content: "Generate, kelola, dan cetak voucher hotspot dari database RADIUS.",

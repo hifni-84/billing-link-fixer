@@ -17,16 +17,16 @@ import { formatIDR } from "@/lib/mikrotik-types";
 export const Route = createFileRoute("/pendapatan")({
   head: () => ({
     meta: [
-      { title: "Pendapatan RADIUS — NAJWA_BILLING" },
+      { title: "Pendapatan RADIUS — BILLING RADIUS" },
       {
         name: "description",
         content:
           "Rekap pendapatan harian 30 hari terakhir dan bulanan 12 bulan terakhir dari voucher dan user RADIUS.",
       },
-      { property: "og:title", content: "Pendapatan RADIUS — NAJWA_BILLING" },
+      { property: "og:title", content: "Pendapatan RADIUS — BILLING RADIUS" },
       {
         property: "og:description",
-        content: "Total pendapatan harian dan bulanan billing NAJWA_BILLING.",
+        content: "Total pendapatan harian dan bulanan billing BILLING RADIUS.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

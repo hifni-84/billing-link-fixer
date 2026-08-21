@@ -33,13 +33,13 @@ import { useCreds } from "@/lib/router-store";
 export const Route = createFileRoute("/vpn")({
   head: () => ({
     meta: [
-      { title: "VPN Router — NAJWA_BILLING" },
+      { title: "VPN Router — BILLING RADIUS" },
       {
         name: "description",
         content:
           "Tambahkan MikroTik dari jaringan mana pun lewat tunnel WireGuard (RouterOS v7), L2TP/IPsec, atau SSTP di TCP 443 (RouterOS v6) langsung dari panel billing.",
       },
-      { property: "og:title", content: "VPN Router — NAJWA_BILLING" },
+      { property: "og:title", content: "VPN Router — BILLING RADIUS" },
       {
         property: "og:description",
         content:

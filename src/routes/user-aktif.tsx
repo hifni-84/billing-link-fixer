@@ -20,13 +20,13 @@ import { useCreds } from "@/lib/router-store";
 export const Route = createFileRoute("/user-aktif")({
   head: () => ({
     meta: [
-      { title: "User Aktif Hotspot — NAJWA_BILLING" },
+      { title: "User Aktif Hotspot — BILLING RADIUS" },
       {
         name: "description",
         content:
           "Monitor sesi hotspot yang sedang online: IP, MAC, durasi, sisa waktu, dan pemakaian data.",
       },
-      { property: "og:title", content: "User Aktif Hotspot — NAJWA_BILLING" },
+      { property: "og:title", content: "User Aktif Hotspot — BILLING RADIUS" },
       {
         property: "og:description",
         content: "Pantau dan putuskan sesi user hotspot yang sedang online.",

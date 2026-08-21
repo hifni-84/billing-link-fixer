@@ -40,13 +40,13 @@ import { waPhoneSave, waSendInvoice, waSendUnpaid } from "@/lib/wa.functions";
 export const Route = createFileRoute("/tagihan")({
   head: () => ({
     meta: [
-      { title: "Tagihan Otomatis — NAJWA_BILLING" },
+      { title: "Tagihan Otomatis — BILLING RADIUS" },
       {
         name: "description",
         content:
           "Tagihan otomatis paket 30 hari dibuat H-1 sebelum expired: pantau status bayar dan perpanjang masa aktif pelanggan.",
       },
-      { property: "og:title", content: "Tagihan Otomatis — NAJWA_BILLING" },
+      { property: "og:title", content: "Tagihan Otomatis — BILLING RADIUS" },
       {
         property: "og:description",
         content:

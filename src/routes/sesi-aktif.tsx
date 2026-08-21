@@ -17,13 +17,13 @@ import { formatBytes, formatDateTime, formatDuration } from "@/lib/mikrotik-type
 export const Route = createFileRoute("/sesi-aktif")({
   head: () => ({
     meta: [
-      { title: "Sesi Aktif RADIUS — NAJWA_BILLING" },
+      { title: "Sesi Aktif RADIUS — BILLING RADIUS" },
       {
         name: "description",
         content:
           "Pantau sesi RADIUS yang sedang berjalan: username, IP, MAC, NAS, durasi, dan pemakaian data.",
       },
-      { property: "og:title", content: "Sesi Aktif RADIUS — NAJWA_BILLING" },
+      { property: "og:title", content: "Sesi Aktif RADIUS — BILLING RADIUS" },
       {
         property: "og:description",
         content: "Daftar sesi accounting FreeRADIUS yang sedang online.",

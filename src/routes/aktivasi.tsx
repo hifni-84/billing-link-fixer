@@ -6,13 +6,13 @@ import { ActivationPanel } from "@/components/LicenseGate";
 export const Route = createFileRoute("/aktivasi")({
   head: () => ({
     meta: [
-      { title: "Aktivasi Billing — NAJWA_BILLING" },
+      { title: "Aktivasi Billing — BILLING RADIUS" },
       {
         name: "description",
         content:
           "Aktifkan panel billing dengan kode unik yang dibuat dari Software ID billing dan lisensi MikroTik: 3 hari, 1 bulan, 1 tahun, atau selamanya.",
       },
-      { property: "og:title", content: "Aktivasi Billing — NAJWA_BILLING" },
+      { property: "og:title", content: "Aktivasi Billing — BILLING RADIUS" },
       {
         property: "og:description",
         content: "Masukkan kode aktivasi dan pantau masa berlaku lisensi billing Anda.",

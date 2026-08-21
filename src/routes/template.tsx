@@ -30,13 +30,13 @@ import { voucherTemplatesGet, voucherTemplatesSave } from "@/lib/voucher-templat
 export const Route = createFileRoute("/template")({
   head: () => ({
     meta: [
-      { title: "Template Voucher — NAJWA_BILLING" },
+      { title: "Template Voucher — BILLING RADIUS" },
       {
         name: "description",
         content:
           "Buat dan ubah template cetak voucher hotspot dengan kode HTML sendiri, lengkap dengan konstanta kode voucher, harga, dan masa aktif.",
       },
-      { property: "og:title", content: "Template Voucher — NAJWA_BILLING" },
+      { property: "og:title", content: "Template Voucher — BILLING RADIUS" },
       {
         property: "og:description",
         content: "Editor template cetak voucher hotspot berbasis HTML untuk billing RADIUS.",
