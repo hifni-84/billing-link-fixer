@@ -64,7 +64,7 @@ export function AppSidebar() {
         <div className="flex items-center gap-3">
           <img
             src={nbsLogo}
-            alt="NR Logo"
+            alt="NBS Logo"
             className="size-9 shrink-0 rounded-xl object-cover shadow-lg shadow-primary/25"
           />
           {!collapsed && (
