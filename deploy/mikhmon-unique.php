@@ -10,7 +10,8 @@ if (!function_exists('njwExistingNames')) {
     /**
      * Ambil daftar kode yang sudah terpakai:
      *  - nama user hotspot di router
-     *  - semua kode yang tertulis di /system script (nama script + isi script)
+     *  - kode voucher pada nama record Report Mikhmon di /system script
+     *  - semua kode yang tertulis di nama/isi /system script
      * Diambil 1x per request lalu di-cache.
      */
     function njwExistingNames($API, $reload = false)
@@ -33,7 +34,23 @@ if (!function_exists('njwExistingNames')) {
             if (is_array($scripts)) {
                 foreach ($scripts as $sc) {
                     if (isset($sc['name']) && $sc['name'] !== "") {
-                        $names[strtolower($sc['name'])] = true;
+                        $scriptName = (string) $sc['name'];
+                        $names[strtolower($scriptName)] = true;
+
+                        // Report Mikhmon menyimpan penjualan dalam nama script:
+                        // tanggal-|-jam-|-USERNAME-|-harga-|-alamat-|-mac-|-
+                        // masa-aktif-|-profil-|-komentar. Username harus diambil
+                        // dari kolom ke-3; sebelumnya hanya seluruh nama record
+                        // yang dibandingkan sehingga voucher expired bisa dipakai lagi.
+                        if (strpos($scriptName, '-|-') !== false) {
+                            $reportFields = explode('-|-', $scriptName);
+                            if (isset($reportFields[2])) {
+                                $reportName = trim((string) $reportFields[2]);
+                                if ($reportName !== "") {
+                                    $names[strtolower($reportName)] = true;
+                                }
+                            }
+                        }
                     }
                     if (isset($sc['source']) && $sc['source'] !== "") {
                         // Ambil semua token alfanumerik 3-16 karakter dari isi script.
@@ -124,7 +141,7 @@ if (!function_exists('njwUniq')) {
 if (!function_exists('njwTaken')) {
     /**
      * Cek apakah $name sudah dipakai (user hotspot mana pun - profil apa pun -
-     * atau tercatat di /system script, mis. voucher expired).
+     * atau tercatat pada Report Mikhmon di /system script, mis. voucher expired).
      * Dipakai untuk penambahan user MANUAL: tidak boleh diubah otomatis,
      * jadi cukup dilaporkan sebagai duplikat.
      */
@@ -149,7 +166,7 @@ if (!function_exists('njwBlockDup')) {
         $safe = htmlspecialchars((string) $name, ENT_QUOTES);
         echo "<div style=\"font-family:sans-serif;padding:16px;color:#b91c1c\">"
             . "<b>Gagal:</b> kode/username <b>" . $safe . "</b> sudah dipakai "
-            . "(user hotspot lain atau voucher expired di /system script). "
+            . "(user hotspot lain atau riwayat Report Mikhmon). "
             . "Pakai kode lain.</div>"
             . "<script>try{alert('Kode/username " . $safe . " sudah dipakai. Pakai kode lain.');history.back();}catch(e){}</script>";
         exit;

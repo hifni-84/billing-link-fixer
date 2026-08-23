@@ -2,8 +2,8 @@
 """Patch Mikhmon v3 agar kode voucher hasil generate / quick print tidak pernah kembar.
 
 Cara kerja: sebelum tiap user hotspot ditambahkan ke MikroTik, kode diperiksa
-terhadap daftar user yang sudah ada di router dan kode lain pada batch yang sama.
-Kalau kembar, kode dibuat ulang otomatis.
+terhadap daftar user yang ada, username pada Report Mikhmon di /system script,
+dan kode lain pada batch yang sama. Kalau kembar, kode dibuat ulang otomatis.
 
 Pakai:  sudo python3 deploy/patch-mikhmon-unique.py [/var/www/mikhmon ...]
 Tanpa argumen: semua folder /var/www/mikhmon* akan dipatch.
