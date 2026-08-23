@@ -1053,7 +1053,12 @@ function VoucherPage() {
                           size="icon"
                           variant="ghost"
                           aria-label={`Hapus ${u.username}`}
-                          onClick={() => delUsers.mutate([u.username])}
+                          onClick={() =>
+                            delUsers.mutate([u.username], {
+                              onSuccess: () => void hapusDiRouter([u.username]),
+                              onError: (e: Error) => toast.error(e.message),
+                            })
+                          }
                         >
                           <Trash2 className="size-4 text-destructive" />
                         </Button>
