@@ -117,10 +117,15 @@ function VoucherPage() {
     else toast.error(`Sinkron MikroTik gagal: ${res.errors[0] ?? "tidak diketahui"}`);
   };
 
+  // Voucher yang dihapus di RADIUS selalu ikut dihapus di MikroTik,
+  // meski mode hybrid tidak aktif. Kalau belum ada router, dilewati diam-diam.
   const hapusDiRouter = async (usernames: string[]) => {
-    if (!hybrid.enabled || !hybrid.syncVoucher || !usernames.length) return;
+    if (!usernames.length) return;
     const res = await removeVouchersFromAllRouters(creds, usernames);
-    if (!res.ok) toast.error(`Hapus di MikroTik gagal: ${res.errors[0] ?? "tidak diketahui"}`);
+    if (res.ok) return;
+    const err = res.errors[0] ?? "tidak diketahui";
+    if (/belum diatur|tidak ditemukan di daftar router/i.test(err)) return;
+    toast.error(`Hapus di MikroTik gagal: ${err}`);
   };
 
   const delUsers = useRadiusMutation((usernames: string[]) =>
@@ -913,10 +918,11 @@ function VoucherPage() {
                 onClick={() => {
                   if (!window.confirm("Hapus semua voucher yang sudah expired?")) return;
                   delExpired.mutate(undefined as never, {
-                    onSuccess: (r) =>
-                      toast.success(
-                        `${(r as { deleted: number }).deleted} voucher expired dihapus`,
-                      ),
+                    onSuccess: (r) => {
+                      const hasil = r as { deleted: number; usernames?: string[] };
+                      toast.success(`${hasil.deleted} voucher expired dihapus`);
+                      void hapusDiRouter(hasil.usernames ?? []);
+                    },
                     onError: (e: Error) => toast.error(e.message),
                   });
                 }}
@@ -1047,7 +1053,12 @@ function VoucherPage() {
                           size="icon"
                           variant="ghost"
                           aria-label={`Hapus ${u.username}`}
-                          onClick={() => delUsers.mutate([u.username])}
+                          onClick={() =>
+                            delUsers.mutate([u.username], {
+                              onSuccess: () => void hapusDiRouter([u.username]),
+                              onError: (e: Error) => toast.error(e.message),
+                            })
+                          }
                         >
                           <Trash2 className="size-4 text-destructive" />
                         </Button>

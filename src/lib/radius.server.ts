@@ -853,8 +853,11 @@ export async function deleteExpiredUsers() {
   const rows = await query<{ username: string }>(
     "SELECT username FROM billing_voucher WHERE expires_at IS NOT NULL AND expires_at <= NOW()",
   );
-  if (!rows.length) return { deleted: 0 };
-  return deleteUsers(rows.map((r) => r.username));
+  if (!rows.length) return { deleted: 0, usernames: [] as string[] };
+  const usernames = rows.map((r) => r.username);
+  const res = await deleteUsers(usernames);
+  // usernames dikembalikan supaya UI bisa menghapusnya juga di MikroTik.
+  return { ...res, usernames };
 }
 
 /**
