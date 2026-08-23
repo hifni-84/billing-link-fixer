@@ -24,7 +24,7 @@ REQUIRE_LINE = (
 ADD_CALL = '$API->comm("/ip/hotspot/user/add"'
 
 
-def patch_file(path: str) -> bool:
+def patch_file(path: str, manual: bool = False) -> bool:
     with open(path, "r", encoding="utf-8", errors="ignore") as fh:
         src = fh.read()
     if MARK in src:
@@ -40,23 +40,48 @@ def patch_file(path: str) -> bool:
     else:
         src = re.sub(r"^<\?php", "<?php\n" + REQUIRE_LINE, src, count=1)
 
-    # 2. Sisipkan pemeriksaan unik tepat sebelum setiap penambahan user.
-    def repl(m):
-        indent = m.group(1)
-        return (
-            indent
-            + "if (function_exists('njwUniq')) { njwUniq($API, $u[$i], $p[$i], $char, $userl, $prefix, $user); }\n"
-            + indent
-            + ADD_CALL
-        )
+    if manual:
+        # User manual: nama tidak boleh diubah otomatis, jadi cukup ditolak.
+        def repl_manual(m):
+            indent, expr = m.group(1), m.group(2).strip()
+            return (
+                indent
+                + "if (function_exists('njwBlockDup')) { njwBlockDup($API, " + expr + "); }\n"
+                + m.group(0).lstrip("\r\n")
+            )
 
-    src = re.sub(r"([ \t]*)" + re.escape(ADD_CALL), repl, src)
+        # Tangkap ekspresi nilai "name" pada pemanggilan add.
+        pattern = (
+            r"([ \t]*)"
+            + re.escape(ADD_CALL)
+            + r"[^;]*?[\"']name[\"']\s*=>\s*([^,\)]+)"
+        )
+        new_src, n = re.subn(pattern, lambda m: repl_manual(m), src, flags=re.S)
+        if n == 0:
+            print("  ! %s: pola nama user tidak dikenali, dilewati" % os.path.basename(path))
+            return False
+        src = new_src
+    else:
+        # 2. Sisipkan pemeriksaan unik tepat sebelum setiap penambahan user batch.
+        def repl(m):
+            indent = m.group(1)
+            return (
+                indent
+                + "if (function_exists('njwUniq')) { njwUniq($API, $u[$i], $p[$i], $char, $userl, $prefix, $user); }\n"
+                + indent
+                + ADD_CALL
+            )
+
+        src = re.sub(r"([ \t]*)" + re.escape(ADD_CALL), repl, src)
 
     shutil.copy2(path, path + ".bak-" + time.strftime("%Y%m%d%H%M%S"))
     with open(path, "w", encoding="utf-8") as fh:
         fh.write(src)
     print("  OK %s" % os.path.basename(path))
     return True
+
+
+BATCH_FILES = ("hotspot/generateuser.php", "hotspot/quickuser.php")
 
 
 def patch_root(root: str) -> None:
@@ -66,12 +91,25 @@ def patch_root(root: str) -> None:
         print("  ! bukan folder Mikhmon (tidak ada include/), dilewati")
         return
     shutil.copyfile(HELPER_SRC, os.path.join(inc, "najwa-unique.php"))
-    for name in ("hotspot/generateuser.php", "hotspot/quickuser.php"):
+    for name in BATCH_FILES:
         target = os.path.join(root, name)
         if os.path.isfile(target):
             patch_file(target)
         else:
             print("  ! %s tidak ada" % name)
+
+    # File lain yang menambah user (mis. tambah user manual) juga dijaga.
+    batch_abs = {os.path.abspath(os.path.join(root, n)) for n in BATCH_FILES}
+    for path in sorted(glob.glob(os.path.join(root, "**", "*.php"), recursive=True)):
+        if os.path.abspath(path) in batch_abs:
+            continue
+        try:
+            with open(path, "r", encoding="utf-8", errors="ignore") as fh:
+                if ADD_CALL not in fh.read():
+                    continue
+        except OSError:
+            continue
+        patch_file(path, manual=True)
 
 
 def main() -> None:
