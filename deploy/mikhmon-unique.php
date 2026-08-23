@@ -7,12 +7,18 @@
  */
 
 if (!function_exists('njwExistingNames')) {
-    /** Ambil daftar nama user hotspot di router (1x per request, lalu di-cache). */
+    /**
+     * Ambil daftar kode yang sudah terpakai:
+     *  - nama user hotspot di router
+     *  - semua kode yang tertulis di /system script (nama script + isi script)
+     * Diambil 1x per request lalu di-cache.
+     */
     function njwExistingNames($API, $reload = false)
     {
         static $names = null;
         if ($names === null || $reload) {
             $names = array();
+
             $rows = $API->comm("/ip/hotspot/user/print", array(".proplist" => "name"));
             if (is_array($rows)) {
                 foreach ($rows as $row) {
@@ -21,10 +27,29 @@ if (!function_exists('njwExistingNames')) {
                     }
                 }
             }
+
+            // Kode yang tersimpan di /system script (mis. script expired/monitor Mikhmon).
+            $scripts = $API->comm("/system/script/print", array(".proplist" => "name,source"));
+            if (is_array($scripts)) {
+                foreach ($scripts as $sc) {
+                    if (isset($sc['name']) && $sc['name'] !== "") {
+                        $names[strtolower($sc['name'])] = true;
+                    }
+                    if (isset($sc['source']) && $sc['source'] !== "") {
+                        // Ambil semua token alfanumerik 3-16 karakter dari isi script.
+                        if (preg_match_all('/[A-Za-z0-9_-]{3,16}/', $sc['source'], $m)) {
+                            foreach ($m[0] as $tok) {
+                                $names[strtolower($tok)] = true;
+                            }
+                        }
+                    }
+                }
+            }
         }
         return $names;
     }
 }
+
 
 if (!function_exists('njwRandCode')) {
     /** Buat kode acak sesuai mode karakter yang dipilih di form Mikhmon. */
