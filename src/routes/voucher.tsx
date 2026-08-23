@@ -918,10 +918,11 @@ function VoucherPage() {
                 onClick={() => {
                   if (!window.confirm("Hapus semua voucher yang sudah expired?")) return;
                   delExpired.mutate(undefined as never, {
-                    onSuccess: (r) =>
-                      toast.success(
-                        `${(r as { deleted: number }).deleted} voucher expired dihapus`,
-                      ),
+                    onSuccess: (r) => {
+                      const hasil = r as { deleted: number; usernames?: string[] };
+                      toast.success(`${hasil.deleted} voucher expired dihapus`);
+                      void hapusDiRouter(hasil.usernames ?? []);
+                    },
                     onError: (e: Error) => toast.error(e.message),
                   });
                 }}
