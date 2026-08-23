@@ -120,3 +120,38 @@ if (!function_exists('njwUniq')) {
         $seen[$key] = true;
     }
 }
+
+if (!function_exists('njwTaken')) {
+    /**
+     * Cek apakah $name sudah dipakai (user hotspot mana pun - profil apa pun -
+     * atau tercatat di /system script, mis. voucher expired).
+     * Dipakai untuk penambahan user MANUAL: tidak boleh diubah otomatis,
+     * jadi cukup dilaporkan sebagai duplikat.
+     */
+    function njwTaken($API, $name)
+    {
+        $name = trim((string) $name);
+        if ($name === "") {
+            return false;
+        }
+        $existing = njwExistingNames($API);
+        return isset($existing[strtolower($name)]);
+    }
+}
+
+if (!function_exists('njwBlockDup')) {
+    /** Hentikan proses + beri pesan bila kode/username manual sudah dipakai. */
+    function njwBlockDup($API, $name)
+    {
+        if (!njwTaken($API, $name)) {
+            return;
+        }
+        $safe = htmlspecialchars((string) $name, ENT_QUOTES);
+        echo "<div style=\"font-family:sans-serif;padding:16px;color:#b91c1c\">"
+            . "<b>Gagal:</b> kode/username <b>" . $safe . "</b> sudah dipakai "
+            . "(user hotspot lain atau voucher expired di /system script). "
+            . "Pakai kode lain.</div>"
+            . "<script>try{alert('Kode/username " . $safe . " sudah dipakai. Pakai kode lain.');history.back();}catch(e){}</script>";
+        exit;
+    }
+}
