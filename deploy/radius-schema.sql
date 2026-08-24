@@ -14,8 +14,9 @@ CREATE TABLE IF NOT EXISTS billing_plan (
   service          ENUM('hotspot','pppoe') NOT NULL DEFAULT 'hotspot'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Kolom harga modal untuk instalasi lama
-ALTER TABLE billing_plan ADD COLUMN cost_price INT NOT NULL DEFAULT 0;
+-- Kolom harga modal untuk instalasi lama.
+-- Aman dijalankan berulang: hanya tambah jika belum ada (MariaDB >= 10.5).
+ALTER TABLE billing_plan ADD COLUMN IF NOT EXISTS cost_price INT NOT NULL DEFAULT 0;
 
 CREATE TABLE IF NOT EXISTS billing_voucher (
   username    VARCHAR(64) NOT NULL PRIMARY KEY,
