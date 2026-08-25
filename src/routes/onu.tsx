@@ -156,13 +156,13 @@ function OnuPage() {
           <tbody>
             {devices.isLoading ? (
               <tr>
-                <td colSpan={6} className="px-3 py-8 text-center text-muted-foreground">
+                <td colSpan={8} className="px-3 py-8 text-center text-muted-foreground">
                   <Loader2 className="mx-auto h-5 w-5 animate-spin" />
                 </td>
               </tr>
             ) : list.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-3 py-8 text-center text-muted-foreground">
+                <td colSpan={8} className="px-3 py-8 text-center text-muted-foreground">
                   Belum ada ONU terdaftar di GenieACS.
                 </td>
               </tr>
@@ -171,6 +171,25 @@ function OnuPage() {
                 <tr key={d.id} className="border-t">
                   <td className="px-3 py-2 font-mono text-xs">{d.serial}</td>
                   <td className="px-3 py-2">{d.model || "-"}</td>
+                  <td className="px-3 py-2">
+                    {(d.ssids ?? []).length ? (
+                      <div className="flex flex-wrap gap-1">
+                        {d.ssids.map((s) => (
+                          <Badge key={s} variant="outline" className="font-normal">
+                            {s}
+                          </Badge>
+                        ))}
+                      </div>
+                    ) : (
+                      "-"
+                    )}
+                  </td>
+                  <td className="px-3 py-2">
+                    <span className="inline-flex items-center gap-1">
+                      <Users className="h-3.5 w-3.5 text-muted-foreground" />
+                      {d.clientCount ?? 0}
+                    </span>
+                  </td>
                   <td className="px-3 py-2">{d.ppp || "-"}</td>
                   <td className="px-3 py-2">{d.ip || "-"}</td>
                   <td className="px-3 py-2">
