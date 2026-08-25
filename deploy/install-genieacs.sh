@@ -63,6 +63,19 @@ if ! node -e "require.resolve('koa-router', { paths: [process.argv[1]] })" "$GEN
 fi
 echo "Dependency GenieACS lengkap (koa-router tersedia)."
 
+# File bin di fork alijayanet tersimpan tanpa bit executable. Sesudah paket
+# kustom disalin, pastikan keempat command dapat dijalankan oleh systemd dan
+# buat ulang symlink global yang dapat hilang saat `npm --prefix install`.
+for service in cwmp nbi fs ui; do
+  executable="$GENIEACS_PACKAGE_DIR/bin/genieacs-$service"
+  if [ ! -f "$executable" ]; then
+    echo "ERROR: executable genieacs-$service tidak ditemukan." >&2
+    exit 1
+  fi
+  chmod 755 "$executable"
+  ln -sfn "$executable" "/usr/bin/genieacs-$service"
+done
+
 echo "==> 4/5 Pindahkan UI GenieACS ke port $UI_PORT"
 for f in /opt/genieacs/genieacs.env /etc/genieacs/genieacs.env; do
   [ -f "$f" ] || continue
