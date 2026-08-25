@@ -9,8 +9,10 @@
 #     sudo bash deploy/clone-server.sh
 #  Hasil: /root/billing-clone-YYYYmmdd-HHMM.tar.gz
 # =============================================================
-set -euo pipefail
+set -uo pipefail   # jangan exit otomatis pada error, biar lanjut & laporkan
 [ "$(id -u)" -eq 0 ] || { echo "Harus dijalankan dengan sudo/root."; exit 1; }
+ERR=0
+trap 'ERR=$?; echo "!!! ERROR di baris $LINENO (exit $ERR) — backup mungkin tidak lengkap"' ERR
 
 APP_DIR="${APP_DIR:-/opt/mikrotik-billing}"
 STAMP="$(date +%Y%m%d-%H%M)"
@@ -115,8 +117,17 @@ crontab -l > "$B/cron/root.cron" 2>/dev/null || true
   dpkg -l | awk '/^ii/{print "  - "$2}' | head -400
 } > "$B/INFO.txt"
 
-log "Mengemas arsip"
-tar -czf "$OUT" -C "$WORK" billing-clone
+log "Mengemas arsip (mungkin butuh beberapa menit jika data besar...)"
+log "  ruangan disk /root: $(df -h /root | tail -1 | awk '{print $4" bebas dari "$2}')"
+log "  ukuran sementara:   $(du -sh "$WORK" 2>/dev/null | cut -f1)"
+if ! tar -czf "$OUT" -C "$WORK" billing-clone; then
+  echo "!!! Gagal membuat tar.gz — kemungkinan RUANG DISK TIDAK CUKUP."
+  echo "    Hapus file tidak terpakai atau pindahkan OUT ke disk lain:"
+  echo "    OUT=/home/\$USER/billing-clone-$STAMP.tar.gz sudo bash deploy/clone-server.sh"
+  df -h /
+  rm -rf "$WORK"
+  exit 1
+fi
 rm -rf "$WORK"
 chmod 600 "$OUT"
 
