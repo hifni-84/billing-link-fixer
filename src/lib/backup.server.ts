@@ -29,7 +29,8 @@ export type BackupData = {
 };
 
 export async function exportBackup(): Promise<BackupData> {
-  const { getSettings, listPlans, listNas } = await import("./radius.server");
+  const { getSettings, listPlans, listNas, ensureVoucherColumns } = await import("./radius.server");
+  await ensureVoucherColumns();
   const settings = await getSettings();
   const plans = await listPlans();
   const nas = await listNas();
