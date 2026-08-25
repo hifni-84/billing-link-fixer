@@ -59,7 +59,10 @@ function sql(iso: string | null | undefined) {
 }
 
 export async function importBackup(data: BackupData, replace: boolean) {
-  const { saveSettings, savePlan, saveNas } = await import("./radius.server");
+  const { saveSettings, savePlan, saveNas, ensureVoucherColumns } = await import(
+    "./radius.server"
+  );
+  await ensureVoucherColumns();
 
   if (replace) {
     await query("DELETE FROM billing_voucher");
