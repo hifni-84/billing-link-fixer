@@ -56,7 +56,13 @@ server {
         proxy_read_timeout 300s;
         proxy_send_timeout 300s;
         client_max_body_size 50m;
+
+        # Izinkan tampil di dalam iframe panel billing
+        proxy_hide_header X-Frame-Options;
+        proxy_hide_header Content-Security-Policy;
+        proxy_cookie_flags ~ secure samesite=none;
     }
+
 }
 EOF
 ln -sfn "$SITE" "$LINK"
