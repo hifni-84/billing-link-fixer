@@ -373,6 +373,42 @@ function DeviceDialog({
                         <span className="text-sm text-muted-foreground">Aktifkan SSID ini</span>
                       </div>
                     ) : null}
+                    <div className="space-y-2">
+                      <p className="flex items-center gap-2 text-sm font-medium">
+                        <Users className="h-4 w-4" /> Pengguna terhubung ({w.clients.length})
+                      </p>
+                      {w.clients.length === 0 ? (
+                        <p className="text-xs text-muted-foreground">
+                          Belum ada perangkat terhubung terbaca. Jalankan Refresh Parameter lalu
+                          buka lagi.
+                        </p>
+                      ) : (
+                        <div className="overflow-x-auto rounded-md border">
+                          <table className="w-full text-xs">
+                            <thead className="bg-muted/50 text-left">
+                              <tr>
+                                <th className="px-2 py-1.5 font-medium">Nama Perangkat</th>
+                                <th className="px-2 py-1.5 font-medium">MAC</th>
+                                <th className="px-2 py-1.5 font-medium">IP</th>
+                                <th className="px-2 py-1.5 font-medium">Sinyal</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {w.clients.map((c) => (
+                                <tr key={c.mac} className="border-t">
+                                  <td className="px-2 py-1.5">{c.hostname || "-"}</td>
+                                  <td className="px-2 py-1.5 font-mono">{c.mac}</td>
+                                  <td className="px-2 py-1.5">{c.ip || "-"}</td>
+                                  <td className="px-2 py-1.5">
+                                    {c.signal ? `${c.signal} dBm` : "-"}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 ))
               )}
