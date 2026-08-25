@@ -89,12 +89,20 @@ rm -f /etc/nginx/sites-enabled/default
 nginx -t && systemctl reload nginx
 
 
-# ---- 5. FreeRADIUS + MySQL otomatis ----
+# ---- 5. MariaDB + skema RADIUS (kalau belum pernah dipasang) ----
+if [ ! -f "$APP_DIR/.env" ] && [ -f "$APP_DIR/deploy/install-radius.sh" ]; then
+  echo "==> Memasang MariaDB + skema RADIUS"
+  bash "$APP_DIR/deploy/install-radius.sh" || \
+    echo "!! Setup database gagal, jalankan manual: sudo bash $APP_DIR/deploy/install-radius.sh"
+fi
+
+# ---- 6. FreeRADIUS + MySQL otomatis ----
 if [ -f "$APP_DIR/deploy/setup-freeradius-sql.sh" ]; then
   echo "==> Konfigurasi FreeRADIUS + MySQL otomatis"
   APP_DIR="$APP_DIR" bash "$APP_DIR/deploy/setup-freeradius-sql.sh" "${RADIUS_SECRET:-najwa123}" || \
     echo "!! Setup FreeRADIUS gagal, jalankan manual: sudo bash $APP_DIR/deploy/setup-freeradius-sql.sh"
 fi
+
 
 echo
 echo "============================================="
