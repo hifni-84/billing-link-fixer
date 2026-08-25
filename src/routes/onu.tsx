@@ -77,7 +77,9 @@ function OnuPage() {
   });
 
   const list = (devices.data?.devices ?? []).filter((d) => {
-    const t = `${d.serial} ${d.model} ${d.manufacturer} ${d.ppp} ${d.ip} ${d.id}`.toLowerCase();
+    const t = `${d.serial} ${d.model} ${d.manufacturer} ${d.ppp} ${d.ip} ${d.id} ${(
+      d.ssids ?? []
+    ).join(" ")}`.toLowerCase();
     return t.includes(q.trim().toLowerCase());
   });
 
