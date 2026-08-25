@@ -35,21 +35,36 @@ echo "==> 3/5 Jalankan $MODE (MongoDB + GenieACS + UI)"
 ( cd "$SRC_DIR" && bash "$MODE" )
 
 echo "==> 4/5 Pindahkan UI GenieACS ke port $UI_PORT"
-ENV_FILE=""
 for f in /opt/genieacs/genieacs.env /etc/genieacs/genieacs.env; do
-  [ -f "$f" ] && ENV_FILE="$f" && break
-done
-if [ -n "$ENV_FILE" ]; then
-  if grep -q '^GENIEACS_UI_PORT=' "$ENV_FILE"; then
-    sed -i "s|^GENIEACS_UI_PORT=.*|GENIEACS_UI_PORT=${UI_PORT}|" "$ENV_FILE"
+  [ -f "$f" ] || continue
+  if grep -q '^GENIEACS_UI_PORT=' "$f"; then
+    sed -i "s|^GENIEACS_UI_PORT=.*|GENIEACS_UI_PORT=${UI_PORT}|" "$f"
   else
-    echo "GENIEACS_UI_PORT=${UI_PORT}" >> "$ENV_FILE"
+    echo "GENIEACS_UI_PORT=${UI_PORT}" >> "$f"
   fi
+done
+
+# Cara paling andal: drop-in systemd (menang atas EnvironmentFile)
+if systemctl list-unit-files | grep -q '^genieacs-ui.service'; then
+  mkdir -p /etc/systemd/system/genieacs-ui.service.d
+  cat > /etc/systemd/system/genieacs-ui.service.d/port.conf <<EOF
+[Service]
+Environment=GENIEACS_UI_PORT=${UI_PORT}
+EOF
   systemctl daemon-reload
   systemctl restart genieacs-ui || true
+  sleep 3
+  if ! systemctl is-active --quiet genieacs-ui; then
+    echo "!! genieacs-ui gagal start. Log terakhir:"
+    journalctl -u genieacs-ui -n 30 --no-pager || true
+  fi
+elif command -v pm2 >/dev/null 2>&1 && pm2 list 2>/dev/null | grep -q genieacs-ui; then
+  pm2 restart genieacs-ui --update-env >/dev/null 2>&1 || true
+  pm2 save >/dev/null 2>&1 || true
 else
-  echo "!! genieacs.env tidak ditemukan, ubah port UI manual bila bentrok."
+  echo "!! service genieacs-ui tidak ditemukan, ubah port UI manual bila bentrok."
 fi
+
 
 echo "==> 5/5 Buka firewall & verifikasi"
 for p in 7547 7557 7567 "$UI_PORT"; do
