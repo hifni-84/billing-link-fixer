@@ -3,6 +3,13 @@
  * WAN/PPPoE, VLAN, SSID & password WiFi, reboot, dsb.
  */
 
+export type AcsClient = {
+  mac: string;
+  hostname: string;
+  ip: string;
+  signal: string;
+};
+
 export type AcsWifi = {
   index: string;
   band: string;
@@ -12,6 +19,7 @@ export type AcsWifi = {
   keyPath: string | null;
   enabled: boolean | null;
   enablePath: string | null;
+  clients: AcsClient[];
 };
 
 export type AcsWan = {
