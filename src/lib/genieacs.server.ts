@@ -199,6 +199,8 @@ function summarize(doc: Record<string, unknown>, params: Record<string, string>)
     online,
     ip,
     ppp: pick(params, /WANPPPConnection\.\d+\.Username$/)?.value || "",
+    ssids: ssidsOf(params),
+    clientCount: clientCountOf(params),
   };
 }
 
