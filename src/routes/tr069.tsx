@@ -45,6 +45,10 @@ function Tr069Page() {
 
   const mixedContent = pageHttps && /^http:\/\//i.test(panel.url);
 
+  const parsed = /^(?:https?:\/\/)?([0-9.]+)(?::(\d+))?/i.exec(cwmpUrl.trim());
+  const ipPort = { ip: parsed?.[1] || "192.168.23.5", port: parsed?.[2] || "7547" };
+
+
   const simpan = () => {
     writeAcs({ url, cwmpUrl });
     toast.success("Pengaturan GenieACS disimpan");
