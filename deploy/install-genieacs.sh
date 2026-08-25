@@ -45,7 +45,7 @@ for f in /opt/genieacs/genieacs.env /etc/genieacs/genieacs.env; do
 done
 
 # Cara paling andal: drop-in systemd (menang atas EnvironmentFile)
-if systemctl list-unit-files | grep -q '^genieacs-ui.service'; then
+if systemctl cat genieacs-ui >/dev/null 2>&1; then
   mkdir -p /etc/systemd/system/genieacs-ui.service.d
   cat > /etc/systemd/system/genieacs-ui.service.d/port.conf <<EOF
 [Service]
