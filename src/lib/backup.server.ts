@@ -70,9 +70,7 @@ function placeholders(rows: number, columns: number) {
 }
 
 export async function importBackup(data: BackupData, replace: boolean) {
-  const { saveSettings, savePlan, saveNas, ensureVoucherColumns } = await import(
-    "./radius.server"
-  );
+  const { saveSettings, savePlan, saveNas, ensureVoucherColumns } = await import("./radius.server");
   await ensureVoucherColumns();
 
   if (replace) {
@@ -117,10 +115,17 @@ export async function importBackup(data: BackupData, replace: boolean) {
          price=VALUES(price), service=VALUES(service), paid=VALUES(paid), nas=VALUES(nas),
          created_at=VALUES(created_at), first_login=VALUES(first_login), expires_at=VALUES(expires_at)`,
       batch.flatMap((v) => [
-        v.username, v.password, v.plan, v.batch ?? "", Number(v.price) || 0,
-        v.service === "pppoe" ? "pppoe" : "hotspot", Number(v.paid) ? 1 : 0,
-        (v.nas ?? "") || "", sql(v.created_at) ?? new Date().toISOString().slice(0, 19).replace("T", " "),
-        sql(v.first_login), sql(v.expires_at),
+        v.username,
+        v.password,
+        v.plan,
+        v.batch ?? "",
+        Number(v.price) || 0,
+        v.service === "pppoe" ? "pppoe" : "hotspot",
+        Number(v.paid) ? 1 : 0,
+        (v.nas ?? "") || "",
+        sql(v.created_at) ?? new Date().toISOString().slice(0, 19).replace("T", " "),
+        sql(v.first_login),
+        sql(v.expires_at),
       ]),
     );
 
