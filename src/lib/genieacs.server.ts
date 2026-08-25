@@ -220,6 +220,9 @@ export async function acsListDevices(nbiUrl?: string): Promise<AcsDevice[]> {
     "Device.DeviceInfo.SoftwareVersion",
     "Device.PPP",
     "Device.IP",
+    "InternetGatewayDevice.LANDevice",
+    "Device.WiFi",
+    "Device.Hosts",
   ].join(",");
   const rows = (await nbi(nbiUrl, `/devices/?projection=${encodeURIComponent(projection)}`)) as
     | Record<string, unknown>[]
