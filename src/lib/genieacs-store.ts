@@ -5,11 +5,13 @@ export type AcsPanel = {
   url: string;
   /** URL ACS yang diisi di ONT, contoh: http://192.168.23.5:7547 */
   cwmpUrl: string;
+  /** URL NBI GenieACS (API), contoh: http://127.0.0.1:7557 */
+  nbiUrl: string;
 };
 
 const KEY = "genieacs.panel";
 
-export const emptyAcs: AcsPanel = { url: "", cwmpUrl: "" };
+export const emptyAcs: AcsPanel = { url: "", cwmpUrl: "", nbiUrl: "" };
 
 function normalize(url: string) {
   const v = url.trim().replace(/\/+$/, "");
@@ -30,7 +32,11 @@ export function readAcs(): AcsPanel {
 export function writeAcs(panel: AcsPanel) {
   window.localStorage.setItem(
     KEY,
-    JSON.stringify({ url: normalize(panel.url), cwmpUrl: normalize(panel.cwmpUrl ?? "") }),
+    JSON.stringify({
+      url: normalize(panel.url),
+      cwmpUrl: normalize(panel.cwmpUrl ?? ""),
+      nbiUrl: normalize(panel.nbiUrl ?? ""),
+    }),
   );
   window.dispatchEvent(new Event("genieacs-panel-changed"));
 }
