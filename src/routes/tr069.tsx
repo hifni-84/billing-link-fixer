@@ -34,8 +34,14 @@ function Tr069Page() {
   const { panel, configured } = useAcs();
   const [url, setUrl] = useState("");
   const [frameKey, setFrameKey] = useState(0);
+  const [pageHttps, setPageHttps] = useState(false);
 
   useEffect(() => setUrl(panel.url), [panel.url]);
+  useEffect(() => {
+    setPageHttps(window.location.protocol === "https:");
+  }, []);
+
+  const mixedContent = pageHttps && /^http:\/\//i.test(panel.url);
 
   const simpan = () => {
     writeAcs({ url });
@@ -83,7 +89,21 @@ function Tr069Page() {
         </p>
       </div>
 
-      {configured ? (
+      {configured && mixedContent ? (
+        <div className="rounded-xl border border-dashed p-6 text-sm space-y-3">
+          <p className="font-medium">Tampilan dalam panel diblokir browser (mixed content)</p>
+          <p className="text-muted-foreground">
+            Panel ini dibuka lewat <b>https</b>, sedangkan GenieACS di{" "}
+            <code>{panel.url}</code> masih <b>http</b>. Browser selalu menolak menampilkan
+            http di dalam halaman https, jadi harus dibuka di tab baru. Agar bisa tampil
+            langsung di panel, akses GenieACS lewat domain https (misal{" "}
+            <code>https://acs.domain-anda.com</code>) lalu isi URL itu di kolom di atas.
+          </p>
+          <Button onClick={buka} className="gap-2">
+            <ExternalLink className="h-4 w-4" /> Buka GenieACS di tab baru
+          </Button>
+        </div>
+      ) : configured ? (
         <div className="rounded-xl border bg-card overflow-hidden">
           <div className="flex items-center justify-between gap-2 border-b px-3 py-2">
             <span className="truncate text-sm text-muted-foreground">{panel.url}</span>
