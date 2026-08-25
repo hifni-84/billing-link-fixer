@@ -50,7 +50,7 @@ export type AcsDeviceDetail = AcsDevice & {
 export type AcsParamWrite = { path: string; value: string; type?: string };
 
 function base(nbiUrl?: string) {
-  const raw = (nbiUrl || process.env["GENIEACS_NBI_URL"] || "http://127.0.0.1:7557").trim();
+  const raw = ((nbiUrl && nbiUrl.trim()) || process.env["GENIEACS_NBI_URL"] || "http://127.0.0.1:7557").trim();
   const withProto = /^https?:\/\//i.test(raw) ? raw : `http://${raw}`;
   return withProto.replace(/\/+$/, "");
 }

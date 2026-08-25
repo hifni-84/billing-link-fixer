@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 
 export const acsDevicesGet = createServerFn({ method: "GET" })
-  .inputValidator((d: { nbiUrl?: string }) => d)
+  .inputValidator((d: { nbiUrl: string }) => d)
   .handler(async ({ data }) => {
     try {
       const { acsListDevices } = await import("./genieacs.server");
@@ -12,7 +12,7 @@ export const acsDevicesGet = createServerFn({ method: "GET" })
   });
 
 export const acsDeviceGet = createServerFn({ method: "GET" })
-  .inputValidator((d: { id: string; nbiUrl?: string }) => d)
+  .inputValidator((d: { id: string; nbiUrl: string }) => d)
   .handler(async ({ data }) => {
     try {
       const { acsGetDevice } = await import("./genieacs.server");
@@ -24,7 +24,7 @@ export const acsDeviceGet = createServerFn({ method: "GET" })
 
 export const acsParamsSet = createServerFn({ method: "POST" })
   .inputValidator(
-    (d: { id: string; writes: { path: string; value: string; type?: string }[]; nbiUrl?: string }) =>
+    (d: { id: string; writes: { path: string; value: string; type?: string }[]; nbiUrl: string }) =>
       d,
   )
   .handler(async ({ data }) => {
@@ -38,7 +38,7 @@ export const acsParamsSet = createServerFn({ method: "POST" })
   });
 
 export const acsObjectAdd = createServerFn({ method: "POST" })
-  .inputValidator((d: { id: string; objectName: string; nbiUrl?: string }) => d)
+  .inputValidator((d: { id: string; objectName: string; nbiUrl: string }) => d)
   .handler(async ({ data }) => {
     try {
       const { acsAddObject } = await import("./genieacs.server");
@@ -50,7 +50,7 @@ export const acsObjectAdd = createServerFn({ method: "POST" })
   });
 
 export const acsObjectDelete = createServerFn({ method: "POST" })
-  .inputValidator((d: { id: string; objectName: string; nbiUrl?: string }) => d)
+  .inputValidator((d: { id: string; objectName: string; nbiUrl: string }) => d)
   .handler(async ({ data }) => {
     try {
       const { acsDeleteObject } = await import("./genieacs.server");
@@ -63,7 +63,7 @@ export const acsObjectDelete = createServerFn({ method: "POST" })
 
 export const acsActionRun = createServerFn({ method: "POST" })
   .inputValidator(
-    (d: { id: string; action: "reboot" | "factoryReset" | "refresh"; nbiUrl?: string }) => d,
+    (d: { id: string; action: "reboot" | "factoryReset" | "refresh"; nbiUrl: string }) => d,
   )
   .handler(async ({ data }) => {
     try {

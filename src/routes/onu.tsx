@@ -67,10 +67,10 @@ function OnuPage() {
   const [q, setQ] = useState("");
   const [openId, setOpenId] = useState<string | null>(null);
 
-  const nbiUrl = panel.nbiUrl || undefined;
+  const nbiUrl = panel.nbiUrl;
 
   const devices = useQuery({
-    queryKey: ["acs-devices", nbiUrl ?? ""],
+    queryKey: ["acs-devices", nbiUrl],
     queryFn: () => acsDevicesGet({ data: { nbiUrl } }),
     enabled: ready,
     refetchInterval: 60_000,
@@ -199,12 +199,12 @@ function DeviceDialog({
   onClose,
 }: {
   id: string;
-  nbiUrl?: string;
+  nbiUrl: string;
   onClose: () => void;
 }) {
   const qc = useQueryClient();
   const detail = useQuery({
-    queryKey: ["acs-device", id, nbiUrl ?? ""],
+    queryKey: ["acs-device", id, nbiUrl],
     queryFn: () => acsDeviceGet({ data: { id, nbiUrl } }),
   });
   const device = detail.data?.device ?? null;
@@ -222,7 +222,10 @@ function DeviceDialog({
   const save = useMutation({
     mutationFn: async (writes: Write[]) => acsParamsSet({ data: { id, writes, nbiUrl } }),
     onSuccess: (r) => {
-      if (!r.ok) return toast.error(r.error ?? "Gagal mengirim perintah");
+      if (!r.ok) {
+        toast.error(r.error ?? "Gagal mengirim perintah");
+        return;
+      }
       toast.success("Perintah dikirim ke ONU");
       setDraft({});
       invalidate();
@@ -234,7 +237,10 @@ function DeviceDialog({
     mutationFn: async (action: "reboot" | "factoryReset" | "refresh") =>
       acsActionRun({ data: { id, action, nbiUrl } }),
     onSuccess: (r) => {
-      if (!r.ok) return toast.error(r.error ?? "Gagal mengirim perintah");
+      if (!r.ok) {
+        toast.error(r.error ?? "Gagal mengirim perintah");
+        return;
+      }
       toast.success("Perintah dikirim");
       invalidate();
     },
@@ -243,7 +249,10 @@ function DeviceDialog({
   const addWan = useMutation({
     mutationFn: async (objectName: string) => acsObjectAdd({ data: { id, objectName, nbiUrl } }),
     onSuccess: (r) => {
-      if (!r.ok) return toast.error(r.error ?? "Gagal menambah WAN");
+      if (!r.ok) {
+        toast.error(r.error ?? "Gagal menambah WAN");
+        return;
+      }
       toast.success("WAN baru ditambahkan, tunggu ONU inform lalu muat ulang");
       invalidate();
     },
@@ -252,7 +261,10 @@ function DeviceDialog({
   const delObj = useMutation({
     mutationFn: async (objectName: string) => acsObjectDelete({ data: { id, objectName, nbiUrl } }),
     onSuccess: (r) => {
-      if (!r.ok) return toast.error(r.error ?? "Gagal menghapus");
+      if (!r.ok) {
+        toast.error(r.error ?? "Gagal menghapus");
+        return;
+      }
       toast.success("Perintah hapus dikirim");
       invalidate();
     },
@@ -260,7 +272,10 @@ function DeviceDialog({
 
   const saveDraft = () => {
     const writes = Object.entries(draft).map(([path, value]) => ({ path, value }));
-    if (!writes.length) return toast.info("Tidak ada perubahan");
+    if (!writes.length) {
+      toast.info("Tidak ada perubahan");
+      return;
+    }
     save.mutate(writes);
   };
 
