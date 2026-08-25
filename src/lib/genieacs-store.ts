@@ -3,11 +3,13 @@ import { useEffect, useState } from "react";
 export type AcsPanel = {
   /** URL web UI GenieACS (repo alijayanet), contoh: http://192.168.23.251:3001 */
   url: string;
+  /** URL ACS yang diisi di ONT, contoh: http://192.168.23.5:7547 */
+  cwmpUrl: string;
 };
 
 const KEY = "genieacs.panel";
 
-export const emptyAcs: AcsPanel = { url: "" };
+export const emptyAcs: AcsPanel = { url: "", cwmpUrl: "" };
 
 function normalize(url: string) {
   const v = url.trim().replace(/\/+$/, "");
@@ -26,7 +28,10 @@ export function readAcs(): AcsPanel {
 }
 
 export function writeAcs(panel: AcsPanel) {
-  window.localStorage.setItem(KEY, JSON.stringify({ url: normalize(panel.url) }));
+  window.localStorage.setItem(
+    KEY,
+    JSON.stringify({ url: normalize(panel.url), cwmpUrl: normalize(panel.cwmpUrl ?? "") }),
+  );
   window.dispatchEvent(new Event("genieacs-panel-changed"));
 }
 
