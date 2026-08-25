@@ -9,8 +9,10 @@
 #     sudo bash deploy/clone-server.sh
 #  Hasil: /root/billing-clone-YYYYmmdd-HHMM.tar.gz
 # =============================================================
-set -euo pipefail
+set -uo pipefail   # jangan exit otomatis pada error, biar lanjut & laporkan
 [ "$(id -u)" -eq 0 ] || { echo "Harus dijalankan dengan sudo/root."; exit 1; }
+ERR=0
+trap 'ERR=$?; echo "!!! ERROR di baris $LINENO (exit $ERR) — backup mungkin tidak lengkap"' ERR
 
 APP_DIR="${APP_DIR:-/opt/mikrotik-billing}"
 STAMP="$(date +%Y%m%d-%H%M)"
