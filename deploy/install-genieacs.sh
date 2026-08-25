@@ -31,8 +31,37 @@ else
 fi
 chmod +x "$SRC_DIR"/*.sh || true
 
-echo "==> 3/5 Jalankan $MODE (MongoDB + GenieACS + UI)"
-( cd "$SRC_DIR" && bash "$MODE" )
+GLOBAL_NODE_MODULES="$(npm root -g 2>/dev/null || true)"
+GENIEACS_PACKAGE_DIR="${GLOBAL_NODE_MODULES}/genieacs"
+
+echo "==> 3/5 Pasang/perbaiki GenieACS (MongoDB + CWMP + FS + NBI + UI)"
+if [ -n "$GLOBAL_NODE_MODULES" ] \
+  && [ -f "$GENIEACS_PACKAGE_DIR/package.json" ] \
+  && systemctl cat genieacs-cwmp genieacs-fs genieacs-nbi genieacs-ui >/dev/null 2>&1; then
+  echo "GenieACS sudah terpasang; lewati restore database dan perbaiki paket yang ada."
+else
+  ( cd "$SRC_DIR" && bash "$MODE" )
+  GLOBAL_NODE_MODULES="$(npm root -g)"
+  GENIEACS_PACKAGE_DIR="${GLOBAL_NODE_MODULES}/genieacs"
+fi
+
+# Installer alijayanet menyalin kode UI kustom setelah `npm install -g`.
+# Pada npm/Node versi baru, penyalinan itu dapat meninggalkan paket tanpa
+# dependency seperti koa-router. Salin konten fork secara eksplisit lalu
+# pasang semua dependency produksi di direktori paket yang benar.
+if [ ! -f "$SRC_DIR/genieacs/package.json" ]; then
+  echo "ERROR: paket GenieACS kustom tidak ditemukan di $SRC_DIR/genieacs" >&2
+  exit 1
+fi
+mkdir -p "$GENIEACS_PACKAGE_DIR"
+cp -a "$SRC_DIR/genieacs/." "$GENIEACS_PACKAGE_DIR/"
+npm --prefix "$GENIEACS_PACKAGE_DIR" install --omit=dev --no-audit --no-fund
+
+if ! node -e "require.resolve('koa-router', { paths: [process.argv[1]] })" "$GENIEACS_PACKAGE_DIR" >/dev/null 2>&1; then
+  echo "ERROR: dependency koa-router masih belum tersedia." >&2
+  exit 1
+fi
+echo "Dependency GenieACS lengkap (koa-router tersedia)."
 
 echo "==> 4/5 Pindahkan UI GenieACS ke port $UI_PORT"
 for f in /opt/genieacs/genieacs.env /etc/genieacs/genieacs.env; do
@@ -52,7 +81,7 @@ if systemctl cat genieacs-ui >/dev/null 2>&1; then
 Environment=GENIEACS_UI_PORT=${UI_PORT}
 EOF
   systemctl daemon-reload
-  systemctl restart genieacs-ui || true
+  systemctl restart genieacs-cwmp genieacs-nbi genieacs-fs genieacs-ui || true
   sleep 3
   if ! systemctl is-active --quiet genieacs-ui; then
     echo "!! genieacs-ui gagal start. Log terakhir:"
@@ -74,6 +103,11 @@ done
 IP="$(hostname -I | awk '{print $1}')"
 echo
 systemctl is-active genieacs-cwmp genieacs-nbi genieacs-fs genieacs-ui || true
+if ! systemctl is-active --quiet genieacs-ui; then
+  echo
+  echo "ERROR: GenieACS UI belum aktif. Periksa log di atas." >&2
+  exit 1
+fi
 echo
 echo "============================================="
 echo " GenieACS UI : http://${IP}:${UI_PORT}  (admin / admin)"
