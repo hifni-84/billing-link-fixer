@@ -109,6 +109,72 @@ function pick(params: Record<string, string>, re: RegExp) {
   return null;
 }
 
+/** Kumpulkan nama SSID aktif (unik, tanpa yang kosong). */
+function ssidsOf(params: Record<string, string>) {
+  const out: string[] = [];
+  for (const [k, v] of Object.entries(params)) {
+    if (!/(WLANConfiguration\.\d+\.SSID|WiFi\.SSID\.\d+\.SSID)$/.test(k)) continue;
+    const name = (v ?? "").trim();
+    if (name && !out.includes(name)) out.push(name);
+  }
+  return out;
+}
+
+/** Ambil daftar klien WiFi (AssociatedDevice) di bawah satu root WLAN. */
+function clientsOf(params: Record<string, string>, root: string): AcsClient[] {
+  const byIndex = new Map<string, AcsClient>();
+  const re = new RegExp(
+    `^${root.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\.AssociatedDevice\\.(\\d+)\\.(.+)$`,
+  );
+  for (const [k, v] of Object.entries(params)) {
+    const m = re.exec(k);
+    if (!m) continue;
+    const idx = m[1]!;
+    const leaf = m[2]!;
+    const c = byIndex.get(idx) ?? { mac: "", hostname: "", ip: "", signal: "" };
+    if (/MACAddress$/i.test(leaf)) c.mac = v;
+    else if (/(HostName|Host_?Name)$/i.test(leaf)) c.hostname = v;
+    else if (/IPAddress$/i.test(leaf)) c.ip = v;
+    else if (/(SignalStrength|RSSI)$/i.test(leaf)) c.signal = v;
+    byIndex.set(idx, c);
+  }
+  // Lengkapi hostname/IP dari tabel Hosts berdasarkan MAC
+  const hosts = new Map<string, { hostname: string; ip: string }>();
+  for (const [k, v] of Object.entries(params)) {
+    const m = /^(.*Hosts\.Host\.\d+)\.MACAddress$/.exec(k);
+    if (!m) continue;
+    const hRoot = m[1]!;
+    hosts.set(v.toUpperCase(), {
+      hostname: params[`${hRoot}.HostName`] ?? "",
+      ip: params[`${hRoot}.IPAddress`] ?? "",
+    });
+  }
+  return [...byIndex.values()]
+    .filter((c) => c.mac)
+    .map((c) => {
+      const h = hosts.get(c.mac.toUpperCase());
+      return {
+        ...c,
+        hostname: c.hostname || h?.hostname || "",
+        ip: c.ip || h?.ip || "",
+      };
+    });
+}
+
+function clientCountOf(params: Record<string, string>) {
+  const macs = new Set<string>();
+  for (const [k, v] of Object.entries(params)) {
+    if (!/AssociatedDevice\.\d+\.[^.]*MACAddress$/i.test(k)) continue;
+    if (v) macs.add(v.toUpperCase());
+  }
+  if (macs.size) return macs.size;
+  let total = 0;
+  for (const [k, v] of Object.entries(params)) {
+    if (/AssociatedDeviceNumberOfEntries$/i.test(k)) total += Number(v) || 0;
+  }
+  return total;
+}
+
 function summarize(doc: Record<string, unknown>, params: Record<string, string>): AcsDevice {
   const id = String(doc["_id"] ?? "");
   const lastInformRaw = (doc["_lastInform"] ?? doc["_registered"]) as string | number | undefined;
