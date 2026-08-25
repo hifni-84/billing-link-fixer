@@ -1,17 +1,21 @@
 import { useEffect, useState } from "react";
 
-export type AcsCreds = {
-  /** URL NBI GenieACS, contoh: http://192.168.1.10:7557 */
+export type AcsPanel = {
+  /** URL web UI GenieACS (repo alijayanet), contoh: http://192.168.23.251:3001 */
   url: string;
-  username: string;
-  password: string;
 };
 
-const KEY = "genieacs.creds";
+const KEY = "genieacs.panel";
 
-export const emptyAcs: AcsCreds = { url: "", username: "", password: "" };
+export const emptyAcs: AcsPanel = { url: "" };
 
-export function readAcs(): AcsCreds {
+function normalize(url: string) {
+  const v = url.trim().replace(/\/+$/, "");
+  if (!v) return "";
+  return /^https?:\/\//i.test(v) ? v : `http://${v}`;
+}
+
+export function readAcs(): AcsPanel {
   if (typeof window === "undefined") return emptyAcs;
   try {
     const raw = window.localStorage.getItem(KEY);
@@ -21,22 +25,22 @@ export function readAcs(): AcsCreds {
   }
 }
 
-export function writeAcs(creds: AcsCreds) {
-  window.localStorage.setItem(KEY, JSON.stringify(creds));
-  window.dispatchEvent(new Event("genieacs-creds-changed"));
+export function writeAcs(panel: AcsPanel) {
+  window.localStorage.setItem(KEY, JSON.stringify({ url: normalize(panel.url) }));
+  window.dispatchEvent(new Event("genieacs-panel-changed"));
 }
 
 export function useAcs() {
-  const [creds, setCreds] = useState<AcsCreds>(emptyAcs);
+  const [panel, setPanel] = useState<AcsPanel>(emptyAcs);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    const sync = () => setCreds(readAcs());
+    const sync = () => setPanel(readAcs());
     sync();
     setReady(true);
-    window.addEventListener("genieacs-creds-changed", sync);
-    return () => window.removeEventListener("genieacs-creds-changed", sync);
+    window.addEventListener("genieacs-panel-changed", sync);
+    return () => window.removeEventListener("genieacs-panel-changed", sync);
   }, []);
 
-  return { creds, ready, configured: ready && creds.url.trim().length > 0 };
+  return { panel, ready, configured: ready && panel.url.trim().length > 0 };
 }
