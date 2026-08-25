@@ -278,6 +278,8 @@ export async function acsListDevices(nbiUrl?: string): Promise<AcsDevice[]> {
     "Device.PPP",
     "Device.IP",
     "InternetGatewayDevice.LANDevice",
+    "InternetGatewayDevice.Hosts",
+    "InternetGatewayDevice.X_HW_LANDevice",
     "Device.WiFi",
     "Device.Hosts",
   ].join(",");
