@@ -33,10 +33,12 @@ export const Route = createFileRoute("/tr069")({
 function Tr069Page() {
   const { panel, configured } = useAcs();
   const [url, setUrl] = useState("");
+  const [cwmpUrl, setCwmpUrl] = useState("");
   const [frameKey, setFrameKey] = useState(0);
   const [pageHttps, setPageHttps] = useState(false);
 
   useEffect(() => setUrl(panel.url), [panel.url]);
+  useEffect(() => setCwmpUrl(panel.cwmpUrl ?? ""), [panel.cwmpUrl]);
   useEffect(() => {
     setPageHttps(window.location.protocol === "https:");
   }, []);
@@ -44,10 +46,11 @@ function Tr069Page() {
   const mixedContent = pageHttps && /^http:\/\//i.test(panel.url);
 
   const simpan = () => {
-    writeAcs({ url });
-    toast.success("URL GenieACS disimpan");
+    writeAcs({ url, cwmpUrl });
+    toast.success("Pengaturan GenieACS disimpan");
     setFrameKey((k) => k + 1);
   };
+
 
   const buka = () => {
     const target = readAcs().url;
