@@ -34,8 +34,14 @@ function Tr069Page() {
   const { panel, configured } = useAcs();
   const [url, setUrl] = useState("");
   const [frameKey, setFrameKey] = useState(0);
+  const [pageHttps, setPageHttps] = useState(false);
 
   useEffect(() => setUrl(panel.url), [panel.url]);
+  useEffect(() => {
+    setPageHttps(window.location.protocol === "https:");
+  }, []);
+
+  const mixedContent = pageHttps && /^http:\/\//i.test(panel.url);
 
   const simpan = () => {
     writeAcs({ url });
