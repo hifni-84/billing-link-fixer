@@ -50,7 +50,7 @@ function Tr069Page() {
 
 
   const simpan = () => {
-    writeAcs({ url, cwmpUrl });
+    writeAcs({ ...panel, url, cwmpUrl });
     toast.success("Pengaturan GenieACS disimpan");
     setFrameKey((k) => k + 1);
   };
