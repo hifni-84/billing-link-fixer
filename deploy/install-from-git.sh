@@ -2,13 +2,13 @@
 # =============================================================
 #  Instal NAJWA_BILLING langsung dari repository GitHub
 #  Pakai:
-#    sudo bash -c "$(curl -fsSL https://raw.githubusercontent.com/hifni-84/bill-naj/main/deploy/install-from-git.sh)"
+#    sudo bash -c "$(curl -fsSL https://raw.githubusercontent.com/hifni-84/billing-link-fixer/main/deploy/install-from-git.sh)"
 #  atau:
 #    sudo bash deploy/install-from-git.sh [URL-REPO] [BRANCH]
 # =============================================================
 set -euo pipefail
 
-REPO="${1:-https://github.com/hifni-84/bill-naj.git}"
+REPO="${1:-https://github.com/hifni-84/billing-link-fixer.git}"
 BRANCH="${2:-main}"
 TARGET="${TARGET:-/opt/mikrotik-billing}"
 
