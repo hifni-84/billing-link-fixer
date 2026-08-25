@@ -3,6 +3,13 @@
  * WAN/PPPoE, VLAN, SSID & password WiFi, reboot, dsb.
  */
 
+export type AcsClient = {
+  mac: string;
+  hostname: string;
+  ip: string;
+  signal: string;
+};
+
 export type AcsWifi = {
   index: string;
   band: string;
@@ -12,6 +19,7 @@ export type AcsWifi = {
   keyPath: string | null;
   enabled: boolean | null;
   enablePath: string | null;
+  clients: AcsClient[];
 };
 
 export type AcsWan = {
@@ -39,6 +47,8 @@ export type AcsDevice = {
   online: boolean;
   ip: string;
   ppp: string;
+  ssids: string[];
+  clientCount: number;
 };
 
 export type AcsDeviceDetail = AcsDevice & {
@@ -99,6 +109,72 @@ function pick(params: Record<string, string>, re: RegExp) {
   return null;
 }
 
+/** Kumpulkan nama SSID aktif (unik, tanpa yang kosong). */
+function ssidsOf(params: Record<string, string>) {
+  const out: string[] = [];
+  for (const [k, v] of Object.entries(params)) {
+    if (!/(WLANConfiguration\.\d+\.SSID|WiFi\.SSID\.\d+\.SSID)$/.test(k)) continue;
+    const name = (v ?? "").trim();
+    if (name && !out.includes(name)) out.push(name);
+  }
+  return out;
+}
+
+/** Ambil daftar klien WiFi (AssociatedDevice) di bawah satu root WLAN. */
+function clientsOf(params: Record<string, string>, root: string): AcsClient[] {
+  const byIndex = new Map<string, AcsClient>();
+  const re = new RegExp(
+    `^${root.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\.AssociatedDevice\\.(\\d+)\\.(.+)$`,
+  );
+  for (const [k, v] of Object.entries(params)) {
+    const m = re.exec(k);
+    if (!m) continue;
+    const idx = m[1]!;
+    const leaf = m[2]!;
+    const c = byIndex.get(idx) ?? { mac: "", hostname: "", ip: "", signal: "" };
+    if (/MACAddress$/i.test(leaf)) c.mac = v;
+    else if (/(HostName|Host_?Name)$/i.test(leaf)) c.hostname = v;
+    else if (/IPAddress$/i.test(leaf)) c.ip = v;
+    else if (/(SignalStrength|RSSI)$/i.test(leaf)) c.signal = v;
+    byIndex.set(idx, c);
+  }
+  // Lengkapi hostname/IP dari tabel Hosts berdasarkan MAC
+  const hosts = new Map<string, { hostname: string; ip: string }>();
+  for (const [k, v] of Object.entries(params)) {
+    const m = /^(.*Hosts\.Host\.\d+)\.MACAddress$/.exec(k);
+    if (!m) continue;
+    const hRoot = m[1]!;
+    hosts.set(v.toUpperCase(), {
+      hostname: params[`${hRoot}.HostName`] ?? "",
+      ip: params[`${hRoot}.IPAddress`] ?? "",
+    });
+  }
+  return [...byIndex.values()]
+    .filter((c) => c.mac)
+    .map((c) => {
+      const h = hosts.get(c.mac.toUpperCase());
+      return {
+        ...c,
+        hostname: c.hostname || h?.hostname || "",
+        ip: c.ip || h?.ip || "",
+      };
+    });
+}
+
+function clientCountOf(params: Record<string, string>) {
+  const macs = new Set<string>();
+  for (const [k, v] of Object.entries(params)) {
+    if (!/AssociatedDevice\.\d+\.[^.]*MACAddress$/i.test(k)) continue;
+    if (v) macs.add(v.toUpperCase());
+  }
+  if (macs.size) return macs.size;
+  let total = 0;
+  for (const [k, v] of Object.entries(params)) {
+    if (/AssociatedDeviceNumberOfEntries$/i.test(k)) total += Number(v) || 0;
+  }
+  return total;
+}
+
 function summarize(doc: Record<string, unknown>, params: Record<string, string>): AcsDevice {
   const id = String(doc["_id"] ?? "");
   const lastInformRaw = (doc["_lastInform"] ?? doc["_registered"]) as string | number | undefined;
@@ -123,6 +199,8 @@ function summarize(doc: Record<string, unknown>, params: Record<string, string>)
     online,
     ip,
     ppp: pick(params, /WANPPPConnection\.\d+\.Username$/)?.value || "",
+    ssids: ssidsOf(params),
+    clientCount: clientCountOf(params),
   };
 }
 
@@ -142,6 +220,9 @@ export async function acsListDevices(nbiUrl?: string): Promise<AcsDevice[]> {
     "Device.DeviceInfo.SoftwareVersion",
     "Device.PPP",
     "Device.IP",
+    "InternetGatewayDevice.LANDevice",
+    "Device.WiFi",
+    "Device.Hosts",
   ].join(",");
   const rows = (await nbi(nbiUrl, `/devices/?projection=${encodeURIComponent(projection)}`)) as
     | Record<string, unknown>[]
@@ -198,6 +279,7 @@ export async function acsGetDevice(id: string, nbiUrl?: string): Promise<AcsDevi
       keyPath,
       enabled: enablePath ? params[enablePath] === "true" || params[enablePath] === "1" : null,
       enablePath,
+      clients: clientsOf(params, root),
     });
   }
 

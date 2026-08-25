@@ -9,6 +9,7 @@ import {
   Save,
   Search,
   Trash2,
+  Users,
   Wifi,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -77,7 +78,9 @@ function OnuPage() {
   });
 
   const list = (devices.data?.devices ?? []).filter((d) => {
-    const t = `${d.serial} ${d.model} ${d.manufacturer} ${d.ppp} ${d.ip} ${d.id}`.toLowerCase();
+    const t = `${d.serial} ${d.model} ${d.manufacturer} ${d.ppp} ${d.ip} ${d.id} ${(
+      d.ssids ?? []
+    ).join(" ")}`.toLowerCase();
     return t.includes(q.trim().toLowerCase());
   });
 
@@ -143,6 +146,8 @@ function OnuPage() {
             <tr>
               <th className="px-3 py-2 font-medium">Serial</th>
               <th className="px-3 py-2 font-medium">Model</th>
+              <th className="px-3 py-2 font-medium">Nama SSID</th>
+              <th className="px-3 py-2 font-medium">Terhubung</th>
               <th className="px-3 py-2 font-medium">User PPPoE</th>
               <th className="px-3 py-2 font-medium">IP</th>
               <th className="px-3 py-2 font-medium">Status</th>
@@ -152,13 +157,13 @@ function OnuPage() {
           <tbody>
             {devices.isLoading ? (
               <tr>
-                <td colSpan={6} className="px-3 py-8 text-center text-muted-foreground">
+                <td colSpan={8} className="px-3 py-8 text-center text-muted-foreground">
                   <Loader2 className="mx-auto h-5 w-5 animate-spin" />
                 </td>
               </tr>
             ) : list.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-3 py-8 text-center text-muted-foreground">
+                <td colSpan={8} className="px-3 py-8 text-center text-muted-foreground">
                   Belum ada ONU terdaftar di GenieACS.
                 </td>
               </tr>
@@ -167,6 +172,25 @@ function OnuPage() {
                 <tr key={d.id} className="border-t">
                   <td className="px-3 py-2 font-mono text-xs">{d.serial}</td>
                   <td className="px-3 py-2">{d.model || "-"}</td>
+                  <td className="px-3 py-2">
+                    {(d.ssids ?? []).length ? (
+                      <div className="flex flex-wrap gap-1">
+                        {d.ssids.map((s) => (
+                          <Badge key={s} variant="outline" className="font-normal">
+                            {s}
+                          </Badge>
+                        ))}
+                      </div>
+                    ) : (
+                      "-"
+                    )}
+                  </td>
+                  <td className="px-3 py-2">
+                    <span className="inline-flex items-center gap-1">
+                      <Users className="h-3.5 w-3.5 text-muted-foreground" />
+                      {d.clientCount ?? 0}
+                    </span>
+                  </td>
                   <td className="px-3 py-2">{d.ppp || "-"}</td>
                   <td className="px-3 py-2">{d.ip || "-"}</td>
                   <td className="px-3 py-2">
@@ -349,6 +373,42 @@ function DeviceDialog({
                         <span className="text-sm text-muted-foreground">Aktifkan SSID ini</span>
                       </div>
                     ) : null}
+                    <div className="space-y-2">
+                      <p className="flex items-center gap-2 text-sm font-medium">
+                        <Users className="h-4 w-4" /> Pengguna terhubung ({w.clients.length})
+                      </p>
+                      {w.clients.length === 0 ? (
+                        <p className="text-xs text-muted-foreground">
+                          Belum ada perangkat terhubung terbaca. Jalankan Refresh Parameter lalu
+                          buka lagi.
+                        </p>
+                      ) : (
+                        <div className="overflow-x-auto rounded-md border">
+                          <table className="w-full text-xs">
+                            <thead className="bg-muted/50 text-left">
+                              <tr>
+                                <th className="px-2 py-1.5 font-medium">Nama Perangkat</th>
+                                <th className="px-2 py-1.5 font-medium">MAC</th>
+                                <th className="px-2 py-1.5 font-medium">IP</th>
+                                <th className="px-2 py-1.5 font-medium">Sinyal</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {w.clients.map((c) => (
+                                <tr key={c.mac} className="border-t">
+                                  <td className="px-2 py-1.5">{c.hostname || "-"}</td>
+                                  <td className="px-2 py-1.5 font-mono">{c.mac}</td>
+                                  <td className="px-2 py-1.5">{c.ip || "-"}</td>
+                                  <td className="px-2 py-1.5">
+                                    {c.signal ? `${c.signal} dBm` : "-"}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 ))
               )}
