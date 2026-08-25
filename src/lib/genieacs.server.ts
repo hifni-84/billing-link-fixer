@@ -47,6 +47,8 @@ export type AcsDevice = {
   online: boolean;
   ip: string;
   ppp: string;
+  ssids: string[];
+  clientCount: number;
 };
 
 export type AcsDeviceDetail = AcsDevice & {
