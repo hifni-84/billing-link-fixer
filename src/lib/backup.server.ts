@@ -29,7 +29,8 @@ export type BackupData = {
 };
 
 export async function exportBackup(): Promise<BackupData> {
-  const { getSettings, listPlans, listNas } = await import("./radius.server");
+  const { getSettings, listPlans, listNas, ensureVoucherColumns } = await import("./radius.server");
+  await ensureVoucherColumns();
   const settings = await getSettings();
   const plans = await listPlans();
   const nas = await listNas();
@@ -58,7 +59,10 @@ function sql(iso: string | null | undefined) {
 }
 
 export async function importBackup(data: BackupData, replace: boolean) {
-  const { saveSettings, savePlan, saveNas } = await import("./radius.server");
+  const { saveSettings, savePlan, saveNas, ensureVoucherColumns } = await import(
+    "./radius.server"
+  );
+  await ensureVoucherColumns();
 
   if (replace) {
     await query("DELETE FROM billing_voucher");

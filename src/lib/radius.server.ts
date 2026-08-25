@@ -76,6 +76,22 @@ async function ensureDisabledColumn() {
 }
 
 /**
+ * Pastikan semua kolom tambahan billing_voucher tersedia.
+ * Dipakai sebelum backup/restore agar database lama/baru tetap kompatibel.
+ */
+export async function ensureVoucherColumns() {
+  await ensurePaidColumn();
+  await ensureNasColumn();
+  await ensureDisabledColumn();
+  try {
+    const { ensurePhoneColumn } = await import("./wa.server");
+    await ensurePhoneColumn();
+  } catch {
+    /* abaikan */
+  }
+}
+
+/**
  * Aktifkan / nonaktifkan user (voucher & pelanggan PPPoE).
  * Nonaktif: password RADIUS dicabut + sesi/user di router dibersihkan,
  * data voucher tetap tersimpan. Aktif kembali: password dipulihkan.
