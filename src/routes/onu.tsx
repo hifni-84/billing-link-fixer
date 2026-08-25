@@ -145,6 +145,8 @@ function OnuPage() {
             <tr>
               <th className="px-3 py-2 font-medium">Serial</th>
               <th className="px-3 py-2 font-medium">Model</th>
+              <th className="px-3 py-2 font-medium">Nama SSID</th>
+              <th className="px-3 py-2 font-medium">Terhubung</th>
               <th className="px-3 py-2 font-medium">User PPPoE</th>
               <th className="px-3 py-2 font-medium">IP</th>
               <th className="px-3 py-2 font-medium">Status</th>
