@@ -46,6 +46,7 @@ const items = [
   { title: "Pendapatan", desc: "Harian & bulanan", url: "/pendapatan", icon: Wallet },
   { title: "Template Voucher", desc: "Desain cetak", url: "/template", icon: LayoutTemplate },
   { title: "TR-069", desc: "GenieACS · ONU", url: "/tr069", icon: Radio },
+  { title: "Kelola ONU", desc: "WAN · VLAN · SSID", url: "/onu", icon: Wifi },
   { title: "VPN Router", desc: "WireGuard multi-router", url: "/vpn", icon: ShieldCheck },
   { title: "Laporan", desc: "Pendapatan", url: "/laporan", icon: BarChart3 },
   { title: "Aktivasi", desc: "Lisensi & masa aktif", url: "/aktivasi", icon: KeyRound },
