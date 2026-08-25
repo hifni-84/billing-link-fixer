@@ -2,17 +2,53 @@
 # =============================================================
 #  Instalasi Panel Billing MikroTik di Ubuntu (22.04 / 24.04)
 #  Jalankan:  sudo bash deploy/install-ubuntu.sh
+#  Atau langsung dari internet (auto clone repo):
+#    sudo bash -c "$(curl -fsSL https://raw.githubusercontent.com/hifni-84/billing-link-fixer/main/deploy/install-ubuntu.sh)"
 # =============================================================
 set -euo pipefail
 
+REPO_URL="${REPO_URL:-https://github.com/hifni-84/billing-link-fixer.git}"
+BRANCH="${BRANCH:-main}"
+TARGET="${TARGET:-/opt/mikrotik-billing}"
+
 APP_NAME="mikrotik-billing"
-APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+[ "$(id -u)" -eq 0 ] || { echo "Harus dijalankan dengan sudo/root."; exit 1; }
+
+# ---- 0. Bootstrap: kalau skrip dijalankan lewat pipe/curl (bukan dari repo),
+#         clone dulu repo-nya lalu jalankan ulang skrip asli dari disk.
+SELF="${BASH_SOURCE[0]:-}"
+if [ -f "$SELF" ]; then
+  APP_DIR="$(cd "$(dirname "$SELF")/.." && pwd)"
+else
+  APP_DIR=""
+fi
+
+if [ -z "$APP_DIR" ] || [ ! -f "$APP_DIR/package.json" ] || [ ! -f "$APP_DIR/deploy/mikrotik-billing.service" ]; then
+  echo "==> Mode bootstrap: mengambil kode dari $REPO_URL"
+  apt-get update -y
+  apt-get install -y git curl ca-certificates unzip
+  if [ -d "$TARGET/.git" ]; then
+    git -C "$TARGET" fetch --all
+    git -C "$TARGET" reset --hard "origin/$BRANCH"
+  else
+    rm -rf "$TARGET"
+    git clone --depth 1 -b "$BRANCH" "$REPO_URL" "$TARGET"
+  fi
+  exec bash "$TARGET/deploy/install-ubuntu.sh"
+fi
+
 APP_USER="${SUDO_USER:-$USER}"
+if [ -z "${APP_USER:-}" ] || [ "$APP_USER" = "root" ]; then
+  APP_USER="$(ls /home 2>/dev/null | head -1)"
+  [ -n "$APP_USER" ] || APP_USER="root"
+fi
 PORT="${PORT:-3000}"
 
 echo "==> Direktori aplikasi : $APP_DIR"
 echo "==> Dijalankan sebagai : $APP_USER"
 echo "==> Port               : $PORT"
+
 
 # ---- 1. Dependensi sistem ----
 apt-get update
@@ -53,12 +89,20 @@ rm -f /etc/nginx/sites-enabled/default
 nginx -t && systemctl reload nginx
 
 
-# ---- 5. FreeRADIUS + MySQL otomatis ----
+# ---- 5. MariaDB + skema RADIUS (kalau belum pernah dipasang) ----
+if [ ! -f "$APP_DIR/.env" ] && [ -f "$APP_DIR/deploy/install-radius.sh" ]; then
+  echo "==> Memasang MariaDB + skema RADIUS"
+  bash "$APP_DIR/deploy/install-radius.sh" || \
+    echo "!! Setup database gagal, jalankan manual: sudo bash $APP_DIR/deploy/install-radius.sh"
+fi
+
+# ---- 6. FreeRADIUS + MySQL otomatis ----
 if [ -f "$APP_DIR/deploy/setup-freeradius-sql.sh" ]; then
   echo "==> Konfigurasi FreeRADIUS + MySQL otomatis"
   APP_DIR="$APP_DIR" bash "$APP_DIR/deploy/setup-freeradius-sql.sh" "${RADIUS_SECRET:-najwa123}" || \
     echo "!! Setup FreeRADIUS gagal, jalankan manual: sudo bash $APP_DIR/deploy/setup-freeradius-sql.sh"
 fi
+
 
 echo
 echo "============================================="
