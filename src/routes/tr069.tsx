@@ -86,11 +86,28 @@ function Tr069Page() {
             <ExternalLink className="h-4 w-4" /> Buka tab baru
           </Button>
         </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="acs-cwmp">URL ACS di ONT (CWMP)</Label>
+          <Input
+            id="acs-cwmp"
+            placeholder="http://192.168.23.5:7547"
+            value={cwmpUrl}
+            onChange={(e) => setCwmpUrl(e.target.value)}
+          />
+          <p className="text-xs text-muted-foreground">
+            Isi sesuai IP:port yang sudah tersetting di ONT. Agar server menjawab di IP
+            tersebut, jalankan sekali di server:{" "}
+            <code>sudo bash deploy/set-acs-ip.sh {ipPort.ip} {ipPort.port}</code>
+          </p>
+        </div>
+
         <p className="text-xs text-muted-foreground">
           Login default GenieACS: <b>admin / admin</b>. Pasang dengan{" "}
           <code>sudo bash deploy/install-genieacs.sh</code> (UI otomatis di port 3001, CWMP 7547).
         </p>
       </div>
+
 
       {configured && mixedContent ? (
         <div className="rounded-xl border border-dashed p-6 text-sm space-y-3">
