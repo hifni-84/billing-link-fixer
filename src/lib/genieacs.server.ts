@@ -279,6 +279,7 @@ export async function acsGetDevice(id: string, nbiUrl?: string): Promise<AcsDevi
       keyPath,
       enabled: enablePath ? params[enablePath] === "true" || params[enablePath] === "1" : null,
       enablePath,
+      clients: clientsOf(params, root),
     });
   }
 
