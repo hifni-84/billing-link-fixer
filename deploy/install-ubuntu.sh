@@ -52,6 +52,14 @@ ln -sf "/etc/nginx/sites-available/${APP_NAME}" "/etc/nginx/sites-enabled/${APP_
 rm -f /etc/nginx/sites-enabled/default
 nginx -t && systemctl reload nginx
 
+
+# ---- 5. FreeRADIUS + MySQL otomatis ----
+if [ -f "$APP_DIR/deploy/setup-freeradius-sql.sh" ]; then
+  echo "==> Konfigurasi FreeRADIUS + MySQL otomatis"
+  APP_DIR="$APP_DIR" bash "$APP_DIR/deploy/setup-freeradius-sql.sh" "${RADIUS_SECRET:-najwa123}" || \
+    echo "!! Setup FreeRADIUS gagal, jalankan manual: sudo bash $APP_DIR/deploy/setup-freeradius-sql.sh"
+fi
+
 echo
 echo "============================================="
 echo " Selesai! Buka http://<IP-SERVER>/"
