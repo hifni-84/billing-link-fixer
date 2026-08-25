@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ExternalLink, RefreshCw, Save, Radio } from "lucide-react";
+import { ExternalLink, RefreshCw, Save } from "lucide-react";
 import { toast } from "sonner";
 
 import { PageHeader } from "@/components/Shared";
@@ -45,16 +45,18 @@ function Tr069Page() {
 
   const buka = () => {
     const target = readAcs().url;
-    if (!target) return toast.error("Isi URL GenieACS dulu");
+    if (!target) {
+      toast.error("Isi URL GenieACS dulu");
+      return;
+    }
     window.open(target, "_blank", "noopener,noreferrer");
   };
 
   return (
     <div className="space-y-6">
       <PageHeader
-        icon={Radio}
         title="TR-069 GenieACS"
-        desc="Panel GenieACS terpisah (repo alijayanet) untuk manajemen ONU pelanggan."
+        description="Panel GenieACS terpisah (repo alijayanet) untuk manajemen ONU pelanggan."
       />
 
       <div className="rounded-xl border bg-card p-4 space-y-3">
