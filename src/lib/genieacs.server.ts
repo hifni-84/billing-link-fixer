@@ -120,60 +120,117 @@ function ssidsOf(params: Record<string, string>) {
   return out;
 }
 
-/** Ambil daftar klien WiFi (AssociatedDevice) di bawah satu root WLAN. */
+type HostRow = {
+  mac: string;
+  hostname: string;
+  ip: string;
+  active: boolean;
+  iface: string;
+  wireless: boolean;
+};
+
+/** Baca tabel Hosts.Host.* (TR-098 & TR-181) menjadi daftar host. */
+function hostsOf(params: Record<string, string>): HostRow[] {
+  const roots = new Set<string>();
+  for (const k of Object.keys(params)) {
+    const m = /^(.*Hosts\.Host\.\d+)\./.exec(k);
+    if (m) roots.add(m[1]!);
+  }
+  const rows: HostRow[] = [];
+  for (const r of roots) {
+    const get = (leafRe: RegExp) => {
+      for (const [k, v] of Object.entries(params)) {
+        if (!k.startsWith(`${r}.`)) continue;
+        if (leafRe.test(k.slice(r.length + 1))) return v;
+      }
+      return "";
+    };
+    const mac = get(/^(PhysAddress|MACAddress)$/i);
+    if (!mac) continue;
+    const activeRaw = get(/^Active$/i);
+    const iface =
+      get(/^(Layer1Interface|InterfaceType|X_.*InterfaceType|AssociatedDevice)$/i) || "";
+    const wireless = /wlan|wifi|wi-fi|802\.11|wireless/i.test(iface);
+    rows.push({
+      mac,
+      hostname: get(/^(HostName|X_.*HostName)$/i),
+      ip: get(/^(IPAddress|IPv4Address\.\d+\.IPAddress)$/i),
+      active: activeRaw === "" ? true : activeRaw === "true" || activeRaw === "1",
+      iface,
+      wireless,
+    });
+  }
+  return rows;
+}
+
+/** Ambil daftar klien WiFi di bawah satu root WLAN (AssociatedDevice + tabel Hosts). */
 function clientsOf(params: Record<string, string>, root: string): AcsClient[] {
+  const byMac = new Map<string, AcsClient>();
+  const esc = root.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const re = new RegExp(`^${esc}\\.(?:AssociatedDevice|X_[^.]*AssociatedDevice)\\.(\\d+)\\.(.+)$`);
   const byIndex = new Map<string, AcsClient>();
-  const re = new RegExp(
-    `^${root.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\.AssociatedDevice\\.(\\d+)\\.(.+)$`,
-  );
   for (const [k, v] of Object.entries(params)) {
     const m = re.exec(k);
     if (!m) continue;
     const idx = m[1]!;
     const leaf = m[2]!;
     const c = byIndex.get(idx) ?? { mac: "", hostname: "", ip: "", signal: "" };
-    if (/MACAddress$/i.test(leaf)) c.mac = v;
+    if (/(MACAddress|MacAddress|PhysAddress)$/i.test(leaf)) c.mac = v;
     else if (/(HostName|Host_?Name)$/i.test(leaf)) c.hostname = v;
     else if (/IPAddress$/i.test(leaf)) c.ip = v;
-    else if (/(SignalStrength|RSSI)$/i.test(leaf)) c.signal = v;
+    else if (/(SignalStrength|RSSI|Noise)$/i.test(leaf)) c.signal = c.signal || v;
     byIndex.set(idx, c);
   }
-  // Lengkapi hostname/IP dari tabel Hosts berdasarkan MAC
-  const hosts = new Map<string, { hostname: string; ip: string }>();
-  for (const [k, v] of Object.entries(params)) {
-    const m = /^(.*Hosts\.Host\.\d+)\.MACAddress$/.exec(k);
-    if (!m) continue;
-    const hRoot = m[1]!;
-    hosts.set(v.toUpperCase(), {
-      hostname: params[`${hRoot}.HostName`] ?? "",
-      ip: params[`${hRoot}.IPAddress`] ?? "",
+
+  const hosts = hostsOf(params);
+  const hostByMac = new Map(hosts.map((h) => [h.mac.toUpperCase(), h]));
+
+  for (const c of byIndex.values()) {
+    if (!c.mac) continue;
+    const h = hostByMac.get(c.mac.toUpperCase());
+    byMac.set(c.mac.toUpperCase(), {
+      ...c,
+      hostname: c.hostname || h?.hostname || "",
+      ip: c.ip || h?.ip || "",
     });
   }
-  return [...byIndex.values()]
-    .filter((c) => c.mac)
-    .map((c) => {
-      const h = hosts.get(c.mac.toUpperCase());
-      return {
-        ...c,
-        hostname: c.hostname || h?.hostname || "",
-        ip: c.ip || h?.ip || "",
-      };
-    });
+
+  // Banyak ONT tidak mengisi AssociatedDevice, tapi tabel Hosts menyebut interface WLAN-nya.
+  const idx = root.split(".").pop() ?? "";
+  for (const h of hosts) {
+    if (!h.active) continue;
+    const key = h.mac.toUpperCase();
+    if (byMac.has(key)) continue;
+    const matchIface =
+      h.iface.includes(root) ||
+      (h.wireless && (new RegExp(`(WLANConfiguration|SSID|AccessPoint)\\.${idx}\\b`).test(h.iface) || !/\d/.test(h.iface)));
+    if (!matchIface) continue;
+    byMac.set(key, { mac: h.mac, hostname: h.hostname, ip: h.ip, signal: "" });
+  }
+
+  return [...byMac.values()];
 }
 
+/** Jumlah perangkat yang benar-benar terhubung (WiFi + LAN) pada satu ONU. */
 function clientCountOf(params: Record<string, string>) {
   const macs = new Set<string>();
   for (const [k, v] of Object.entries(params)) {
-    if (!/AssociatedDevice\.\d+\.[^.]*MACAddress$/i.test(k)) continue;
+    if (!/AssociatedDevice\.\d+\.[^.]*(MACAddress|MacAddress|PhysAddress)$/i.test(k)) continue;
     if (v) macs.add(v.toUpperCase());
+  }
+  for (const h of hostsOf(params)) {
+    if (h.active && h.mac) macs.add(h.mac.toUpperCase());
   }
   if (macs.size) return macs.size;
   let total = 0;
   for (const [k, v] of Object.entries(params)) {
-    if (/AssociatedDeviceNumberOfEntries$/i.test(k)) total += Number(v) || 0;
+    if (/(TotalAssociations|AssociatedDeviceNumberOfEntries|HostNumberOfEntries)$/i.test(k)) {
+      total = Math.max(total, Number(v) || 0);
+    }
   }
   return total;
 }
+
 
 function summarize(doc: Record<string, unknown>, params: Record<string, string>): AcsDevice {
   const id = String(doc["_id"] ?? "");
