@@ -58,6 +58,17 @@ function sql(iso: string | null | undefined) {
   return d.toISOString().slice(0, 19).replace("T", " ");
 }
 
+function chunks<T>(items: T[], size: number) {
+  const result: T[][] = [];
+  for (let i = 0; i < items.length; i += size) result.push(items.slice(i, i + size));
+  return result;
+}
+
+function placeholders(rows: number, columns: number) {
+  const row = `(${Array.from({ length: columns }, () => "?").join(",")})`;
+  return Array.from({ length: rows }, () => row).join(",");
+}
+
 export async function importBackup(data: BackupData, replace: boolean) {
   const { saveSettings, savePlan, saveNas, ensureVoucherColumns } = await import(
     "./radius.server"
@@ -93,45 +104,44 @@ export async function importBackup(data: BackupData, replace: boolean) {
   }
 
   let vouchers = 0;
-  for (const v of data.vouchers ?? []) {
+  // Restore secara massal agar backup besar tidak terkena timeout Nginx.
+  // Satu voucher sebelumnya membutuhkan 4-5 perjalanan terpisah ke MySQL.
+  for (const batch of chunks(data.vouchers ?? [], 500)) {
+    const names = batch.map((v) => v.username);
+    const nameMarks = names.map(() => "?").join(",");
     await query(
       `INSERT INTO billing_voucher
          (username, password, plan, batch, price, service, paid, nas, created_at, first_login, expires_at)
-       VALUES (?,?,?,?,?,?,?,?,COALESCE(?, NOW()),?,?)
+       VALUES ${placeholders(batch.length, 11)}
        ON DUPLICATE KEY UPDATE password=VALUES(password), plan=VALUES(plan), batch=VALUES(batch),
          price=VALUES(price), service=VALUES(service), paid=VALUES(paid), nas=VALUES(nas),
          created_at=VALUES(created_at), first_login=VALUES(first_login), expires_at=VALUES(expires_at)`,
-      [
-        v.username,
-        v.password,
-        v.plan,
-        v.batch ?? "",
-        Number(v.price) || 0,
-        v.service === "pppoe" ? "pppoe" : "hotspot",
-        Number(v.paid) ? 1 : 0,
-        (v.nas ?? "") || "",
-        sql(v.created_at),
-        sql(v.first_login),
-        sql(v.expires_at),
-      ],
+      batch.flatMap((v) => [
+        v.username, v.password, v.plan, v.batch ?? "", Number(v.price) || 0,
+        v.service === "pppoe" ? "pppoe" : "hotspot", Number(v.paid) ? 1 : 0,
+        (v.nas ?? "") || "", sql(v.created_at) ?? new Date().toISOString().slice(0, 19).replace("T", " "),
+        sql(v.first_login), sql(v.expires_at),
+      ]),
     );
-    await query("DELETE FROM radcheck WHERE username = ?", [v.username]);
+
+    await query(`DELETE FROM radcheck WHERE username IN (${nameMarks})`, names);
     await query(
-      "INSERT INTO radcheck (username, attribute, op, value) VALUES (?, 'Cleartext-Password', ':=', ?)",
-      [v.username, v.password],
+      `INSERT INTO radcheck (username, attribute, op, value) VALUES ${placeholders(batch.length, 4)}`,
+      batch.flatMap((v) => [v.username, "Cleartext-Password", ":=", v.password]),
     );
-    if ((v.nas ?? "").trim()) {
+    const withNas = batch.filter((v) => (v.nas ?? "").trim());
+    if (withNas.length) {
       await query(
-        "INSERT INTO radcheck (username, attribute, op, value) VALUES (?, 'NAS-IP-Address', '==', ?)",
-        [v.username, (v.nas ?? "").trim()],
+        `INSERT INTO radcheck (username, attribute, op, value) VALUES ${placeholders(withNas.length, 4)}`,
+        withNas.flatMap((v) => [v.username, "NAS-IP-Address", "==", (v.nas ?? "").trim()]),
       );
     }
-    await query("DELETE FROM radusergroup WHERE username = ?", [v.username]);
-    await query("INSERT INTO radusergroup (username, groupname, priority) VALUES (?, ?, 1)", [
-      v.username,
-      v.plan,
-    ]);
-    vouchers += 1;
+    await query(`DELETE FROM radusergroup WHERE username IN (${nameMarks})`, names);
+    await query(
+      `INSERT INTO radusergroup (username, groupname, priority) VALUES ${placeholders(batch.length, 3)}`,
+      batch.flatMap((v) => [v.username, v.plan, 1]),
+    );
+    vouchers += batch.length;
   }
 
   let nas = 0;
