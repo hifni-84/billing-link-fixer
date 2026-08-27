@@ -248,14 +248,25 @@ export async function savePlan(p: RadiusPlan) {
     );
   }
 
+  // MikroTik membatasi jumlah device per user berdasarkan "shared-users" pada
+  // profile lokalnya. Kirim Mikrotik-Group agar router memakai profile dengan
+  // nama paket yang sama (profile ini dibuat lewat tombol "Sinkron ke Router"),
+  // sehingga shared 5 benar-benar mengizinkan 5 device.
+  await query(
+    "INSERT INTO radgroupreply (groupname, attribute, op, value) VALUES (?, 'Mikrotik-Group', ':=', ?)",
+    [p.name, p.name],
+  );
+
+  // Simultaneous-Use hanya dipasang bila memang dibatasi (>0). Nilai 0 = tanpa batas.
   if (p.shared_users > 0) {
     await query(
       "INSERT INTO radgroupcheck (groupname, attribute, op, value) VALUES (?, 'Simultaneous-Use', ':=', ?)",
-      [p.name, String(p.shared_users)],
+      [p.name, String(Math.max(1, p.shared_users))],
     );
   }
   return { ok: true };
 }
+
 
 export async function deletePlan(name: string) {
   await query("DELETE FROM billing_plan WHERE name = ?", [name]);
