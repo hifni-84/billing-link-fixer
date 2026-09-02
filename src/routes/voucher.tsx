@@ -947,6 +947,7 @@ function VoucherPage() {
                   <TableHead className="w-10">#</TableHead>
                   <TableHead>Username</TableHead>
                   <TableHead>Password</TableHead>
+                  <TableHead>MAC</TableHead>
                   <TableHead>Paket</TableHead>
                   <TableHead>Layanan</TableHead>
                   <TableHead>Harga</TableHead>
