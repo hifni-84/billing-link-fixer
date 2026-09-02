@@ -1070,7 +1070,7 @@ function VoucherPage() {
                 })}
                 {daftar.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={14} className="py-10 text-center text-muted-foreground">
+                    <TableCell colSpan={15} className="py-10 text-center text-muted-foreground">
                       Belum ada user di database RADIUS.
                     </TableCell>
                   </TableRow>
