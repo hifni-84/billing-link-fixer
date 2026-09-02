@@ -33,6 +33,8 @@ export type RadiusUser = {
   first_login: string | null;
   expires_at: string | null;
   online: number;
+  /** MAC address terakhir yang login memakai user ini */
+  mac?: string | null;
 };
 
 export type RadiusSession = {

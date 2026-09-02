@@ -289,7 +289,13 @@ export async function listUsers(): Promise<RadiusUser[]> {
             (SELECT COUNT(*) FROM radacct a
               WHERE a.username = v.username AND a.acctstoptime IS NULL
                 AND COALESCE(a.acctupdatetime, a.acctstarttime) > NOW() - INTERVAL 10 MINUTE
-            ) AS online
+            ) AS online,
+            (SELECT a2.callingstationid FROM radacct a2
+              WHERE a2.username = v.username AND a2.callingstationid <> ''
+              ORDER BY a2.acctstoptime IS NULL DESC,
+                       COALESCE(a2.acctupdatetime, a2.acctstarttime) DESC
+              LIMIT 1
+            ) AS mac
        FROM billing_voucher v
       ORDER BY v.created_at DESC, v.username`,
   );

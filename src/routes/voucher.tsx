@@ -947,6 +947,7 @@ function VoucherPage() {
                   <TableHead className="w-10">#</TableHead>
                   <TableHead>Username</TableHead>
                   <TableHead>Password</TableHead>
+                  <TableHead>MAC</TableHead>
                   <TableHead>Paket</TableHead>
                   <TableHead>Layanan</TableHead>
                   <TableHead>Harga</TableHead>
@@ -980,6 +981,7 @@ function VoucherPage() {
                       </TableCell>
                       <TableCell className="mono-num font-medium">{u.username}</TableCell>
                       <TableCell className="mono-num">{u.password}</TableCell>
+                      <TableCell className="mono-num text-xs">{u.mac || "-"}</TableCell>
                       <TableCell>{u.plan}</TableCell>
                       <TableCell className="text-xs uppercase">{u.service}</TableCell>
                       <TableCell className="mono-num">{formatIDR(u.price)}</TableCell>
@@ -1068,7 +1070,7 @@ function VoucherPage() {
                 })}
                 {daftar.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={14} className="py-10 text-center text-muted-foreground">
+                    <TableCell colSpan={15} className="py-10 text-center text-muted-foreground">
                       Belum ada user di database RADIUS.
                     </TableCell>
                   </TableRow>
