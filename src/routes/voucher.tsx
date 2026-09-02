@@ -981,6 +981,7 @@ function VoucherPage() {
                       </TableCell>
                       <TableCell className="mono-num font-medium">{u.username}</TableCell>
                       <TableCell className="mono-num">{u.password}</TableCell>
+                      <TableCell className="mono-num text-xs">{u.mac || "-"}</TableCell>
                       <TableCell>{u.plan}</TableCell>
                       <TableCell className="text-xs uppercase">{u.service}</TableCell>
                       <TableCell className="mono-num">{formatIDR(u.price)}</TableCell>
