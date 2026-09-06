@@ -123,13 +123,17 @@ echo "*/5 * * * * root $CLEAN" >"$CRON"
 chmod 644 "$CRON"
 
 echo "==> 4/4 Restart FreeRADIUS"
-if freeradius -CX >/dev/null 2>&1; then
+if freeradius -CX >/tmp/fr-check.log 2>&1; then
   systemctl restart freeradius && echo "    FreeRADIUS aktif"
 else
-  echo "    CONFIG ERROR:" >&2
-  freeradius -CX 2>&1 | grep -iE "error|failed" | head -20 >&2
-  echo "    Perbaiki dengan: sudo bash deploy/setup-freeradius-sql.sh" >&2
+  echo "    CONFIG ERROR — pesan asli dari FreeRADIUS:" >&2
+  grep -iE "error|failed|cannot|unknown|syntax" /tmp/fr-check.log | head -20 >&2
+  echo "    ---- 20 baris terakhir ----" >&2
+  tail -20 /tmp/fr-check.log >&2
+  echo "    Log lengkap: /tmp/fr-check.log" >&2
+  echo "    Coba perbaiki otomatis: sudo bash deploy/setup-freeradius-sql.sh" >&2
 fi
+
 
 cat <<'INFO'
 
