@@ -140,10 +140,11 @@ cat <<'INFO'
 =====================================================================
  Selesai. Sesi hantu dibersihkan otomatis tiap 5 menit.
 
- Saran tambahan di MikroTik (agar MAC acak tidak mengunci voucher):
+  Saran tambahan di MikroTik (agar MAC acak tidak mengunci voucher):
    /ip hotspot profile set [find] login-by=http-chap,http-pap
-   /ip hotspot user profile set [find] shared-users=5 mac-cookie-timeout=0
    /ip hotspot set [find] keepalive-timeout=2m idle-timeout=5m
+  Catatan: shared-users per paket diatur dari menu Paket di panel
+  (jangan set [find] global — itu mengubah semua profil sekaligus).
  Interim update wajib aktif supaya sesi terdeteksi hidup:
    /ppp aaa set interim-update=1m
 =====================================================================
