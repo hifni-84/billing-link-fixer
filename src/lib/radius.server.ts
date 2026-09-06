@@ -281,7 +281,9 @@ export async function listUsers(): Promise<RadiusUser[]> {
   await ensurePaidColumn();
   await ensureNasColumn();
   await ensureDisabledColumn();
+  await closeStaleSessions();
   return query<RadiusUser>(
+
     `SELECT v.username, v.password, v.plan, v.batch, v.price, v.service, v.paid, v.nas, v.disabled,
             ${utc("v.created_at")} AS created_at,
             ${utc("v.first_login")} AS first_login,
@@ -476,7 +478,29 @@ export async function updateUser(input: {
 
 /* ------------------------------- SESI ----------------------------------- */
 
+/**
+ * Tutup sesi "hantu" di radacct: baris yang masih terbuka (acctstoptime NULL)
+ * tetapi sudah tidak ada update akunting > 15 menit. Ini terjadi saat HP
+ * berpindah SSID / memakai MAC acak sehingga MikroTik tidak pernah mengirim
+ * Accounting-Stop. Sesi hantu membuat Simultaneous-Use menolak login ulang.
+ */
+export async function closeStaleSessions(minutes = 15) {
+  try {
+    await query(
+      `UPDATE radacct
+          SET acctstoptime = COALESCE(acctupdatetime, acctstarttime),
+              acctterminatecause = 'Stale-Session'
+        WHERE acctstoptime IS NULL
+          AND COALESCE(acctupdatetime, acctstarttime) < NOW() - INTERVAL ? MINUTE`,
+      [minutes],
+    );
+  } catch {
+    /* diamkan: bukan error fatal untuk tampilan panel */
+  }
+}
+
 export async function listSessions(): Promise<RadiusSession[]> {
+  await closeStaleSessions();
   return query<RadiusSession>(
     `SELECT radacctid, username, nasipaddress, framedipaddress, callingstationid,
             ${utc("acctstarttime")} AS acctstarttime,
@@ -484,6 +508,7 @@ export async function listSessions(): Promise<RadiusSession[]> {
        FROM radacct WHERE acctstoptime IS NULL ORDER BY acctstarttime DESC LIMIT 500`,
   );
 }
+
 
 export type RadiusReport = {
   daily: { date: string; total: number; count: number }[];
