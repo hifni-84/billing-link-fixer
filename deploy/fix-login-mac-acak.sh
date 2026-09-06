@@ -76,6 +76,11 @@ else
 fi
 
 echo "==> 2/4 Mengaktifkan delete_stale_sessions di modul SQL FreeRADIUS"
+# Cek dulu apakah konfigurasi sudah bermasalah SEBELUM disunting.
+BASE_OK=0
+freeradius -CX >/tmp/fr-check-before.log 2>&1 && BASE_OK=1
+[[ $BASE_OK -eq 0 ]] && echo "    (catatan: konfigurasi FreeRADIUS sudah error sebelum diubah)"
+
 # Hanya sunting file efektif (mods-enabled). Jika itu symlink, sunting targetnya
 # agar konfigurasi tidak terduplikasi dan tidak merusak struktur blok sql { }.
 TARGET="$FR_DIR/mods-enabled/sql"
@@ -90,13 +95,16 @@ if [[ -f "$TARGET" ]]; then
   else
     sed -i '0,/^\s*sql\s*{/s//&\n\tdelete_stale_sessions = yes/' "$TARGET"
   fi
-  if ! freeradius -CX >/dev/null 2>&1; then
-    echo "    !! konfigurasi jadi error, mengembalikan file semula"
+  if [[ $BASE_OK -eq 1 ]] && ! freeradius -CX >/dev/null 2>&1; then
+    echo "    !! perubahan membuat konfigurasi error, mengembalikan file semula"
     cp -a "$BAK" "$TARGET"
+  else
+    echo "    OK"
   fi
 else
   echo "    !! modul sql FreeRADIUS tidak ditemukan, lewati"
 fi
+
 
 echo "==> 3/4 Memasang pembersih otomatis tiap 5 menit (cron)"
 CLEAN="/usr/local/bin/radius-clean-stale.sh"
@@ -115,13 +123,17 @@ echo "*/5 * * * * root $CLEAN" >"$CRON"
 chmod 644 "$CRON"
 
 echo "==> 4/4 Restart FreeRADIUS"
-if freeradius -CX >/dev/null 2>&1; then
+if freeradius -CX >/tmp/fr-check.log 2>&1; then
   systemctl restart freeradius && echo "    FreeRADIUS aktif"
 else
-  echo "    CONFIG ERROR:" >&2
-  freeradius -CX 2>&1 | grep -iE "error|failed" | head -20 >&2
-  echo "    Perbaiki dengan: sudo bash deploy/setup-freeradius-sql.sh" >&2
+  echo "    CONFIG ERROR — pesan asli dari FreeRADIUS:" >&2
+  grep -iE "error|failed|cannot|unknown|syntax" /tmp/fr-check.log | head -20 >&2
+  echo "    ---- 20 baris terakhir ----" >&2
+  tail -20 /tmp/fr-check.log >&2
+  echo "    Log lengkap: /tmp/fr-check.log" >&2
+  echo "    Coba perbaiki otomatis: sudo bash deploy/setup-freeradius-sql.sh" >&2
 fi
+
 
 cat <<'INFO'
 
