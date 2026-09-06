@@ -281,7 +281,9 @@ export async function listUsers(): Promise<RadiusUser[]> {
   await ensurePaidColumn();
   await ensureNasColumn();
   await ensureDisabledColumn();
+  await closeStaleSessions();
   return query<RadiusUser>(
+
     `SELECT v.username, v.password, v.plan, v.batch, v.price, v.service, v.paid, v.nas, v.disabled,
             ${utc("v.created_at")} AS created_at,
             ${utc("v.first_login")} AS first_login,
