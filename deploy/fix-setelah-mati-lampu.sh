@@ -20,13 +20,21 @@ FR_DIR="/etc/freeradius/3.0"
 BAK_DIR="/var/backups/freeradius"
 FOUND=0
 if [ -d "$FR_DIR" ]; then
+  # Hentikan loop restart systemd supaya tidak membaca konfigurasi saat dibersihkan.
+  systemctl stop freeradius >/dev/null 2>&1 || true
+  systemctl reset-failed freeradius >/dev/null 2>&1 || true
   mkdir -p "$BAK_DIR"
   while IFS= read -r f; do
     [ -z "$f" ] && continue
     echo "    pindah: $f"
-    mv -f "$f" "$BAK_DIR/$(basename "$f").$(date +%s)" 2>/dev/null && FOUND=$((FOUND+1))
+    # -L diperlukan untuk tautan simbolik yang targetnya sudah dipindahkan.
+    if [ -e "$f" ] || [ -L "$f" ]; then
+      SRC_DIR="$(basename "$(dirname "$f")")"
+      DEST="$BAK_DIR/${SRC_DIR}-$(basename "$f").$(date +%s%N)"
+      mv -f "$f" "$DEST" 2>/dev/null && FOUND=$((FOUND+1))
+    fi
   done < <(find "$FR_DIR/mods-enabled" "$FR_DIR/mods-available" "$FR_DIR/sites-enabled" \
-             -maxdepth 1 -type f \( -name '*.bak*' -o -name '*.orig' -o -name '*~' \
+             -maxdepth 1 \( -type f -o -type l \) \( -name '*.bak*' -o -name '*.orig' -o -name '*~' \
              -o -name '*.save' -o -name '*.dpkg-*' -o -name '*.rpmsave' \) 2>/dev/null)
 fi
 if [ "$FOUND" -gt 0 ]; then
@@ -34,6 +42,21 @@ if [ "$FOUND" -gt 0 ]; then
 else
   echo "    tidak ada file nyasar"
 fi
+
+# Pemeriksaan kedua: jangan lanjut bila masih ada file/tautan cadangan yang dapat
+# dibaca FreeRADIUS. Hapus tautan rusak; pindahkan sisanya dengan nama unik.
+while IFS= read -r f; do
+  [ -z "$f" ] && continue
+  warn "masih ditemukan, membersihkan paksa: $f"
+  if [ -L "$f" ] && [ ! -e "$f" ]; then
+    rm -f "$f"
+  else
+    SRC_DIR="$(basename "$(dirname "$f")")"
+    mv -f "$f" "$BAK_DIR/${SRC_DIR}-$(basename "$f").cleanup.$(date +%s%N)" 2>/dev/null || rm -f "$f"
+  fi
+done < <(find "$FR_DIR/mods-enabled" "$FR_DIR/mods-available" "$FR_DIR/sites-enabled" \
+           -maxdepth 1 \( -type f -o -type l \) \( -name '*.bak*' -o -name '*.orig' -o -name '*~' \
+           -o -name '*.save' -o -name '*.dpkg-*' -o -name '*.rpmsave' \) 2>/dev/null)
 
 step "1/6 Cek layanan penting"
 for svc in mariadb mysql freeradius mikrotik-billing nginx; do
