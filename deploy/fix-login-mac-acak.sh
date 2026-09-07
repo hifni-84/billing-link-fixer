@@ -86,7 +86,12 @@ freeradius -CX >/tmp/fr-check-before.log 2>&1 && BASE_OK=1
 TARGET="$FR_DIR/mods-enabled/sql"
 [[ -L "$TARGET" ]] && TARGET="$(readlink -f "$TARGET")"
 if [[ -f "$TARGET" ]]; then
-  BAK="$TARGET.bak-stale-$(date +%s)"
+  # PENTING: cadangan TIDAK boleh disimpan di mods-enabled/ maupun mods-available/,
+  # karena FreeRADIUS membaca semua file di sana dan akan menolak start dengan
+  # error 'Duplicate module "sql { ... }"'.
+  BAK_DIR="/var/backups/freeradius"
+  mkdir -p "$BAK_DIR"
+  BAK="$BAK_DIR/sql.bak-stale-$(date +%s)"
   cp -a "$TARGET" "$BAK"
   if grep -qE '^\s*delete_stale_sessions' "$TARGET"; then
     sed -i 's/^\(\s*\)delete_stale_sessions.*/\1delete_stale_sessions = yes/' "$TARGET"
