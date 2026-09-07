@@ -64,23 +64,36 @@ command -v pm2 >/dev/null && pm2 restart all --update-env >/dev/null 2>&1 || tru
 echo "==> Menyamakan password di konfigurasi FreeRADIUS"
 RAD="/etc/freeradius/3.0"
 [ -d "$RAD" ] || RAD="/etc/freeradius"
-if [ -f "$RAD/mods-available/sql" ]; then
+SQLCONF="$RAD/mods-enabled/sql"
+[ -L "$SQLCONF" ] && SQLCONF="$(readlink -f "$SQLCONF")"
+[ -f "$SQLCONF" ] || SQLCONF="$RAD/mods-available/sql"
+if [ -f "$SQLCONF" ]; then
   sed -i \
     -e "s/^\(\s*\)#\?\s*server = .*/\1server = \"127.0.0.1\"/" \
     -e "s/^\(\s*\)#\?\s*login = .*/\1login = \"$DB_USER\"/" \
     -e "s/^\(\s*\)#\?\s*password = .*/\1password = \"$DB_PASS\"/" \
     -e "s/^\(\s*\)#\?\s*radius_db = .*/\1radius_db = \"$DB_NAME\"/" \
-    "$RAD/mods-available/sql"
+    "$SQLCONF"
   bash "$APP_DIR/deploy/fix-radius-mysql-ssl.sh"
+fi
+
+echo "==> Memeriksa dan menyalakan FreeRADIUS"
+if freeradius -CX >/tmp/fix-radius-db-check.log 2>&1; then
+  systemctl enable freeradius >/dev/null 2>&1 || true
+  systemctl restart freeradius
+  echo "    FreeRADIUS aktif"
+else
+  echo "!! Konfigurasi FreeRADIUS masih error:" >&2
+  tail -n 20 /tmp/fix-radius-db-check.log >&2
+  exit 1
 fi
 
 cat <<INFO
 
 =====================================================================
- Selesai. Kredensial database sekarang:
+ Selesai. Kredensial database sudah dipulihkan:
    DB   : $DB_NAME
    User : $DB_USER
-   Pass : $DB_PASS
 
  Muat ulang halaman RADIUS di panel (Ctrl+F5).
  Cek log panel bila masih merah:
