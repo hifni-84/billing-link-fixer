@@ -12,6 +12,29 @@ warn() { echo "    !! $*"; }
 
 DB_NAME="${DB_NAME:-radius}"
 
+step "0/6 Bersihkan file cadangan nyasar di folder modul FreeRADIUS"
+# FreeRADIUS membaca SEMUA file di mods-enabled/ dan mods-available/.
+# File cadangan (*.bak*, *.orig, *~, *.save, *.dpkg-*) membuat modul terbaca dua kali
+# -> error: Duplicate module "sql { ... }" dan service menolak start.
+FR_DIR="/etc/freeradius/3.0"
+BAK_DIR="/var/backups/freeradius"
+FOUND=0
+if [ -d "$FR_DIR" ]; then
+  mkdir -p "$BAK_DIR"
+  while IFS= read -r f; do
+    [ -z "$f" ] && continue
+    echo "    pindah: $f"
+    mv -f "$f" "$BAK_DIR/$(basename "$f").$(date +%s)" 2>/dev/null && FOUND=$((FOUND+1))
+  done < <(find "$FR_DIR/mods-enabled" "$FR_DIR/mods-available" "$FR_DIR/sites-enabled" \
+             -maxdepth 1 -type f \( -name '*.bak*' -o -name '*.orig' -o -name '*~' \
+             -o -name '*.save' -o -name '*.dpkg-*' -o -name '*.rpmsave' \) 2>/dev/null)
+fi
+if [ "$FOUND" -gt 0 ]; then
+  echo "    $FOUND file dipindahkan ke $BAK_DIR"
+else
+  echo "    tidak ada file nyasar"
+fi
+
 step "1/6 Cek layanan penting"
 for svc in mariadb mysql freeradius mikrotik-billing nginx; do
   if systemctl list-unit-files | grep -q "^${svc}.service"; then
