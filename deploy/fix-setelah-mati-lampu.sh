@@ -59,7 +59,16 @@ else
 fi
 
 step "5/6 Restart FreeRADIUS"
-systemctl restart freeradius >/dev/null 2>&1 && ok || warn "gagal restart, cek: journalctl -u freeradius -n 40"
+if systemctl restart freeradius >/dev/null 2>&1; then
+  ok
+else
+  warn "gagal restart. Pesan asli dari FreeRADIUS:"
+  journalctl -u freeradius -n 40 --no-pager 2>&1 | sed 's/^/      /'
+  echo "      ---- hasil uji konfigurasi ----"
+  if [ -s /tmp/radius-check.log ]; then
+    grep -iE 'error|failed|cannot|unknown|denied' /tmp/radius-check.log | tail -n 25 | sed 's/^/      /'
+  fi
+fi
 
 step "6/6 Ringkasan"
 echo "    Sesi aktif sekarang :"
