@@ -889,7 +889,14 @@ export async function maintenance(hapusExpired = true) {
                          AND c.value = v.password)
           OR NOT EXISTS (SELECT 1 FROM radusergroup g
                           WHERE g.username = v.username AND g.groupname = v.plan)
+          OR EXISTS (SELECT 1 FROM radcheck e
+                      WHERE e.username = v.username
+                        AND e.attribute = 'Expiration'
+                        AND (STR_TO_DATE(e.value, '%d %b %Y %H:%i:%s') IS NULL
+                             OR STR_TO_DATE(e.value, '%d %b %Y %H:%i:%s')
+                                < DATE_SUB(v.expires_at, INTERVAL 60 SECOND)))
         )`,
+
   );
   for (const r of pulih) {
     await query(
