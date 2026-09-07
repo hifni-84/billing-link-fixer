@@ -867,6 +867,54 @@ export async function maintenance(hapusExpired = true) {
     );
   }
 
+  // 2b) PERBAIKAN OTOMATIS: user yang masa aktifnya masih ada tetapi datanya
+  //     di FreeRADIUS hilang/kadaluarsa (mis. pernah kena blokir expired lalu
+  //     masa aktifnya dihitung ulang) -> password, tanggal expired, dan grup
+  //     paket dipulihkan supaya bisa login kembali.
+  await ensureDisabledColumn();
+  const pulih = await query<{
+    username: string;
+    password: string;
+    plan: string;
+    exp: string | null;
+  }>(
+    `SELECT v.username, v.password, v.plan, v.expires_at AS exp
+       FROM billing_voucher v
+      WHERE COALESCE(v.disabled, 0) = 0
+        AND (v.expires_at IS NULL OR v.expires_at > NOW())
+        AND (
+          NOT EXISTS (SELECT 1 FROM radcheck c
+                       WHERE c.username = v.username
+                         AND c.attribute = 'Cleartext-Password'
+                         AND c.value = v.password)
+          OR NOT EXISTS (SELECT 1 FROM radusergroup g
+                          WHERE g.username = v.username AND g.groupname = v.plan)
+        )`,
+  );
+  for (const r of pulih) {
+    await query(
+      "DELETE FROM radcheck WHERE username = ? AND attribute IN ('Cleartext-Password','Expiration')",
+      [r.username],
+    );
+    await query(
+      "INSERT INTO radcheck (username, attribute, op, value) VALUES (?, 'Cleartext-Password', ':=', ?)",
+      [r.username, r.password],
+    );
+    if (r.exp) {
+      await query(
+        "INSERT INTO radcheck (username, attribute, op, value) VALUES (?, 'Expiration', ':=', ?)",
+        [r.username, radiusDate(String(r.exp).replace(" ", "T"))],
+      );
+    }
+    await query("DELETE FROM radusergroup WHERE username = ?", [r.username]);
+    await query("INSERT INTO radusergroup (username, groupname, priority) VALUES (?, ?, 1)", [
+      r.username,
+      r.plan,
+    ]);
+    result.stamped += 1;
+  }
+
+
   // 3) Voucher habis masa aktif -> diblokir (data tetap tersimpan)
   const habis = await query<{ username: string }>(
     "SELECT username FROM billing_voucher WHERE expires_at IS NOT NULL AND expires_at <= NOW()",
