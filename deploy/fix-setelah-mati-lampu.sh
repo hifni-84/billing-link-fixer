@@ -96,9 +96,22 @@ if command -v radiusd >/dev/null 2>&1 || command -v freeradius >/dev/null 2>&1; 
   if "$BIN" -CX >/tmp/radius-check.log 2>&1; then
     ok
   else
-    warn "konfigurasi FreeRADIUS error. Pesan asli:"
-    tail -n 30 /tmp/radius-check.log
-    warn "Perbaiki dengan: sudo bash deploy/setup-freeradius-sql.sh"
+    if grep -qE "Access denied for user .*using password: NO|Couldn't connect to MySQL server" /tmp/radius-check.log; then
+      warn "akses database RADIUS ditolak; memulihkan password database otomatis"
+      APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+      if bash "$APP_DIR/deploy/fix-radius-db.sh"; then
+        "$BIN" -CX >/tmp/radius-check.log 2>&1 && ok || {
+          warn "konfigurasi masih error setelah pemulihan:"
+          tail -n 30 /tmp/radius-check.log
+        }
+      else
+        warn "pemulihan password database gagal"
+      fi
+    else
+      warn "konfigurasi FreeRADIUS error. Pesan asli:"
+      tail -n 30 /tmp/radius-check.log
+      warn "Perbaiki dengan: sudo bash deploy/setup-freeradius-sql.sh"
+    fi
   fi
 else
   warn "FreeRADIUS tidak terpasang"

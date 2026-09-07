@@ -33,18 +33,27 @@ fi
 echo "==> Memastikan driver MySQL FreeRADIUS terpasang"
 apt-get install -y freeradius-mysql >/dev/null
 
-# ---- Ambil kredensial DB dari .env panel ----
+# ---- Ambil kredensial DB dari .env panel / service systemd ----
 ENV_FILE="$APP_DIR/.env"
+SERVICE_ENV="/etc/systemd/system/mikrotik-billing.service.d/radius.conf"
 DB_HOST="127.0.0.1"; DB_PORT="3306"; DB_USER="radius"; DB_NAME="radius"; DB_PASS=""
-if [[ -f "$ENV_FILE" ]]; then
-  get() { grep -E "^$1=" "$ENV_FILE" | tail -1 | cut -d= -f2- | tr -d '"'"'"'' | tr -d '\r'; }
-  DB_HOST="$(get RADIUS_DB_HOST || true)"; DB_HOST="${DB_HOST:-127.0.0.1}"
-  DB_PORT="$(get RADIUS_DB_PORT || true)"; DB_PORT="${DB_PORT:-3306}"
-  DB_USER="$(get RADIUS_DB_USER || true)"; DB_USER="${DB_USER:-radius}"
-  DB_NAME="$(get RADIUS_DB_NAME || true)"; DB_NAME="${DB_NAME:-radius}"
-  DB_PASS="$(get RADIUS_DB_PASSWORD || true)"
-else
-  echo "!! $ENV_FILE tidak ditemukan — memakai default user radius tanpa password" >&2
+get_from() {
+  grep -hE "(^|Environment=)$2=" "$1" 2>/dev/null | tail -1 |
+    sed "s/.*$2=//" | tr -d '"'"'"'' | tr -d '\r'
+}
+for SOURCE in "$ENV_FILE" "$SERVICE_ENV"; do
+  [[ -f "$SOURCE" ]] || continue
+  VALUE="$(get_from "$SOURCE" RADIUS_DB_HOST || true)"; [[ -n "$VALUE" ]] && DB_HOST="$VALUE"
+  VALUE="$(get_from "$SOURCE" RADIUS_DB_PORT || true)"; [[ -n "$VALUE" ]] && DB_PORT="$VALUE"
+  VALUE="$(get_from "$SOURCE" RADIUS_DB_USER || true)"; [[ -n "$VALUE" ]] && DB_USER="$VALUE"
+  VALUE="$(get_from "$SOURCE" RADIUS_DB_NAME || true)"; [[ -n "$VALUE" ]] && DB_NAME="$VALUE"
+  VALUE="$(get_from "$SOURCE" RADIUS_DB_PASSWORD || true)"; [[ -n "$VALUE" ]] && DB_PASS="$VALUE"
+done
+
+if [[ -z "$DB_PASS" ]]; then
+  echo "!! Password database RADIUS tidak ditemukan; konfigurasi kosong tidak akan ditulis." >&2
+  echo "   Jalankan: sudo bash $APP_DIR/deploy/fix-radius-db.sh" >&2
+  exit 1
 fi
 
 # ---- 1. Client MikroTik ----
