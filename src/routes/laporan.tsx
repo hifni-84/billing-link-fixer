@@ -48,10 +48,15 @@ function LaporanPage() {
   const report = useRadiusReport();
   const [range, setRange] = useState("30");
   const [plan, setPlan] = useState("all");
+  const [service, setService] = useState("all");
 
   const planOptions = useMemo(
-    () => (report.data?.perPlan ?? []).map((p) => p.plan).sort((a, b) => a.localeCompare(b)),
-    [report.data],
+    () =>
+      (report.data?.perPlan ?? [])
+        .filter((p) => service === "all" || p.service === service)
+        .map((p) => p.plan)
+        .sort((a, b) => a.localeCompare(b)),
+    [report.data, service],
   );
 
   const view = useMemo(() => {
@@ -59,11 +64,14 @@ function LaporanPage() {
     const since =
       limit === 0 ? "" : new Date(Date.now() - limit * 86400000).toISOString().slice(0, 10);
     const dailyPlans = (report.data?.dailyPlans ?? []).filter(
-      (d) => (limit === 0 || d.date >= since) && (plan === "all" || d.plan === plan),
+      (d) =>
+        (limit === 0 || d.date >= since) &&
+        (plan === "all" || d.plan === plan) &&
+        (service === "all" || d.service === service),
     );
 
     let filtered: { date: string; total: number; count: number }[];
-    if (plan === "all") {
+    if (plan === "all" && service === "all") {
       filtered = (report.data?.daily ?? []).filter((d) => limit === 0 || d.date >= since);
     } else {
       const map = new Map<string, { total: number; count: number }>();
@@ -88,7 +96,14 @@ function LaporanPage() {
       chart: [...filtered]
         .sort((a, b) => a.date.localeCompare(b.date))
         .map((d) => ({ date: d.date.slice(5), total: d.total })),
-      perPlan: perPlanRows.length > 0 ? perPlanRows : plan === "all" ? (report.data?.perPlan ?? []) : [],
+      perPlan:
+        perPlanRows.length > 0
+          ? perPlanRows
+          : plan === "all"
+            ? (report.data?.perPlan ?? []).filter(
+                (p) => service === "all" || p.service === service,
+              )
+            : [],
       dailyPlans: [...dailyPlans].sort(
         (a, b) => b.date.localeCompare(a.date) || b.count - a.count,
       ),
@@ -96,7 +111,7 @@ function LaporanPage() {
       count: filtered.reduce((s, d) => s + d.count, 0),
       unsold: report.data?.unsold ?? 0,
     };
-  }, [report.data, range, plan]);
+  }, [report.data, range, plan, service]);
 
   const exportCsv = () => {
     const lines = ["tanggal,profil_voucher,jumlah_voucher,pendapatan"];
@@ -125,6 +140,22 @@ function LaporanPage() {
                 <SelectItem value="30">30 hari</SelectItem>
                 <SelectItem value="90">90 hari</SelectItem>
                 <SelectItem value="0">Semua</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select
+              value={service}
+              onValueChange={(v) => {
+                setService(v);
+                setPlan("all");
+              }}
+            >
+              <SelectTrigger className="w-40">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Semua jenis</SelectItem>
+                <SelectItem value="hotspot">Voucher Hotspot</SelectItem>
+                <SelectItem value="pppoe">Bulanan (PPPoE)</SelectItem>
               </SelectContent>
             </Select>
             <Select value={plan} onValueChange={setPlan}>
@@ -169,7 +200,12 @@ function LaporanPage() {
           </p>
           <p className="mono-num mt-2 text-2xl font-semibold">{view.count}</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            Profil: {plan === "all" ? "semua profil" : plan}
+            Profil: {plan === "all" ? "semua profil" : plan} ·{" "}
+            {service === "all"
+              ? "semua jenis"
+              : service === "pppoe"
+                ? "bulanan (PPPoE)"
+                : "voucher hotspot"}
           </p>
         </div>
         <div className="panel p-5">
