@@ -123,7 +123,7 @@ function gridA4(perRow: number) {
   /* rapatkan isi voucher agar muat 33 per lembar */
   .najwa-a4 > * > * { margin: 0 !important; padding: 0 !important; }
   .najwa-a4 .t { font-size: 7px !important; margin-bottom: 1px !important; }
-  .najwa-a4 [data-voucher-brand] { height: 11px !important; margin-bottom: 1px !important; }
+  .najwa-a4 [data-voucher-brand] { height: 11px !important; margin-bottom: 0 !important; }
   .najwa-a4 [data-voucher-brand] img { max-width: 62px !important; max-height: 11px !important; }
   .najwa-a4 .code { font-size: 13px !important; }
   .najwa-a4 .price { font-size: 9px !important; }
@@ -135,16 +135,23 @@ function gridA4(perRow: number) {
 
 /** Pertahankan desain template; rapikan hanya garis vertikal kanan yang terputus. */
 const GARIS_RAPI = `<style>
-  *, *::before, *::after { border-right-style: solid !important; }
+  [data-voucher-item] { border-right-style: solid !important; }
   [data-voucher-brand] { margin-bottom: 0 !important; }
 </style>`;
+
+/** Hapus baris nama hotspot lama dari template yang sudah tersimpan. */
+function rapikanIsiVoucher(html: string) {
+  return html
+    .replace(/<([a-z][\w:-]*)\b[^>]*>[^<>]*nim\.net[^<>]*<\/\1>/gi, "")
+    .replace(/(<[a-z][\w:-]*)(\b[^>]*>)/i, '$1 data-voucher-item$2');
+}
 
 export function buildHtml(t: VoucherTemplate, list: VoucherData[], perRow?: number) {
   const header = t.header + GARIS_RAPI;
   const footer = t.footer;
   const rows = list
     .map((v) => {
-      const row = isiKonstanta(t.row, v);
+      const row = rapikanIsiVoucher(isiKonstanta(t.row, v));
       if (row.includes("data-voucher-brand") || row.includes("/voucher-logo.png")) return row;
       return row.replace(/(<[^>]+>)/, `$1${VOUCHER_LOGO}`);
     })
