@@ -623,7 +623,7 @@ export async function report(): Promise<RadiusReport> {
   const dailyPlanRows = [...dailyPlanMap.entries()]
     .map(([key, value]) => {
       const [date = "", plan = "default"] = key.split("\u0000");
-      return { date, plan, ...value };
+      return { date, plan, service: serviceOfPlan.get(plan) ?? "hotspot", ...value };
     })
     .filter((r) => tanggalTampil.has(r.date))
     .sort((a, b) => b.date.localeCompare(a.date) || b.total - a.total);
