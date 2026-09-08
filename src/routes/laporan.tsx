@@ -134,7 +134,7 @@ function LaporanPage() {
         description="Sumber data sama dengan menu Pendapatan (harga modal voucher)."
         action={
           <div className="flex flex-wrap gap-2">
-            <Select value={range} onValueChange={setRange}>
+            <Select value={range} onValueChange={setRange} disabled={bulan !== "0"}>
               <SelectTrigger className="w-32">
                 <SelectValue />
               </SelectTrigger>
@@ -143,6 +143,32 @@ function LaporanPage() {
                 <SelectItem value="30">30 hari</SelectItem>
                 <SelectItem value="90">90 hari</SelectItem>
                 <SelectItem value="0">Semua</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={bulan} onValueChange={setBulan}>
+              <SelectTrigger className="w-36">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="0">Semua bulan</SelectItem>
+                {[
+                  "Januari",
+                  "Februari",
+                  "Maret",
+                  "April",
+                  "Mei",
+                  "Juni",
+                  "Juli",
+                  "Agustus",
+                  "September",
+                  "Oktober",
+                  "November",
+                  "Desember",
+                ].map((nama, i) => (
+                  <SelectItem key={nama} value={String(i + 1)}>
+                    {nama}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
             <Select
