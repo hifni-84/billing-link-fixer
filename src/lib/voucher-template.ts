@@ -133,18 +133,31 @@ function gridA4(perRow: number) {
 
 
 
+/** Ubah semua garis putus-putus (dashed/dotted) jadi garis utuh. */
+function rapikanGaris(html: string) {
+  return html.replace(/\b(dashed|dotted)\b/g, "solid");
+}
+
+/** Style tambahan supaya garis voucher selalu rapi & tidak terpotong. */
+const GARIS_RAPI = `<style>
+  *, *::before, *::after { border-style: solid !important; }
+  .v { overflow: hidden; }
+</style>`;
+
 export function buildHtml(t: VoucherTemplate, list: VoucherData[], perRow?: number) {
+  const header = rapikanGaris(t.header) + GARIS_RAPI;
+  const footer = rapikanGaris(t.footer);
   const rows = list
     .map((v) => {
-      const row = isiKonstanta(t.row, v);
+      const row = rapikanGaris(isiKonstanta(t.row, v));
       if (row.includes("data-voucher-brand") || row.includes("/voucher-logo.png")) return row;
       return row.replace(/(<[^>]+>)/, `$1${VOUCHER_LOGO}`);
     })
     .join("\n");
   if (perRow && perRow > 0) {
-    return `${t.header}${gridA4(perRow)}<div class="najwa-a4">${rows}</div>${t.footer}`;
+    return `${header}${gridA4(perRow)}<div class="najwa-a4">${rows}</div>${footer}`;
   }
-  return t.header + rows + t.footer;
+  return header + rows + footer;
 }
 
 export function printVouchers(t: VoucherTemplate, list: VoucherData[], perRow?: number) {
