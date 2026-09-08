@@ -513,9 +513,9 @@ export async function listSessions(): Promise<RadiusSession[]> {
 export type RadiusReport = {
   daily: { date: string; total: number; count: number }[];
   monthly: { month: string; total: number; count: number }[];
-  perPlan: { plan: string; total: number; count: number }[];
+  perPlan: { plan: string; service: string; total: number; count: number }[];
   /** Rincian paket yang terjual pada setiap tanggal */
-  dailyPlans: { date: string; plan: string; total: number; count: number }[];
+  dailyPlans: { date: string; plan: string; service: string; total: number; count: number }[];
   todayRevenue: number;
   todayCount: number;
   monthRevenue: number;
@@ -541,17 +541,18 @@ export async function report(): Promise<RadiusReport> {
     cost_price: number;
     price: number;
     plan: string | null;
+    service: string | null;
     created_at: string;
     first_login: string | null;
   };
-  const sqlLengkap = `SELECT v.paid, COALESCE(p.cost_price, 0) AS cost_price, COALESCE(v.price, 0) AS price, v.plan AS plan,
+  const sqlLengkap = `SELECT v.paid, COALESCE(p.cost_price, 0) AS cost_price, COALESCE(v.price, 0) AS price, v.plan AS plan, v.service AS service,
             ${utc("v.created_at")} AS created_at,
             ${utc("COALESCE(v.first_login, (SELECT MIN(a.acctstarttime) FROM radacct a WHERE a.username = v.username AND a.acctstarttime >= v.created_at))")} AS first_login
        FROM billing_voucher v
        LEFT JOIN billing_plan p ON p.name = v.plan`;
   // Versi sederhana dipakai bila subquery radacct gagal (mis. tabel radacct
   // besar/berbeda versi) agar laporan tetap terbaca, tidak nol semua.
-  const sqlSederhana = `SELECT v.paid, COALESCE(p.cost_price, 0) AS cost_price, COALESCE(v.price, 0) AS price, v.plan AS plan,
+  const sqlSederhana = `SELECT v.paid, COALESCE(p.cost_price, 0) AS cost_price, COALESCE(v.price, 0) AS price, v.plan AS plan, v.service AS service,
             ${utc("v.created_at")} AS created_at,
             ${utc("v.first_login")} AS first_login
        FROM billing_voucher v
@@ -576,6 +577,7 @@ export async function report(): Promise<RadiusReport> {
   const monthlyMap = new Map<string, { total: number; count: number }>();
   const planMap = new Map<string, { total: number; count: number }>();
   const dailyPlanMap = new Map<string, { total: number; count: number }>();
+  const serviceOfPlan = new Map<string, string>();
   let totalRevenue = 0;
   let used = 0;
 
@@ -594,6 +596,7 @@ export async function report(): Promise<RadiusReport> {
     const day = dailyMap.get(date) ?? { total: 0, count: 0 };
     dailyMap.set(date, { total: day.total + amount, count: day.count + 1 });
     const planKey = row.plan || "default";
+    if (!serviceOfPlan.has(planKey)) serviceOfPlan.set(planKey, row.service || "hotspot");
     const planValue = planMap.get(planKey) ?? { total: 0, count: 0 };
     planMap.set(planKey, { total: planValue.total + amount, count: planValue.count + 1 });
     const dpKey = `${date}\u0000${planKey}`;
@@ -642,7 +645,7 @@ export async function report(): Promise<RadiusReport> {
     daily: [...dailyRows].reverse(),
     monthly: [...monthlyRows].reverse(),
     perPlan: [...planMap.entries()]
-      .map(([plan, value]) => ({ plan, ...value }))
+      .map(([plan, value]) => ({ plan, service: serviceOfPlan.get(plan) ?? "hotspot", ...value }))
       .sort((a, b) => b.total - a.total),
     dailyPlans: dailyPlanRows,
     todayRevenue: hariRow?.total ?? 0,
