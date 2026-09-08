@@ -43,7 +43,7 @@ export const TEMPLATE_DEFAULT: VoucherTemplate = {
 <style>
   body{font-family:Roboto,Arial,sans-serif;margin:10px;background:#fff;color:#111}
   .wrap{display:flex;flex-wrap:wrap;gap:6px}
-  .v{width:200px;border:1px dashed #999;border-radius:8px;padding:8px;box-sizing:border-box}
+  .v{width:200px;border:1px solid #999;border-radius:8px;padding:8px;box-sizing:border-box}
   .v .t{font-size:11px;font-weight:bold;text-align:center;border-bottom:1px solid #ccc;padding-bottom:3px;margin-bottom:5px}
   .v .code{font-size:20px;font-weight:bold;text-align:center;letter-spacing:1px;font-family:Roboto,Arial,sans-serif}
   .v .price{font-size:13px;text-align:center;margin-top:2px}
