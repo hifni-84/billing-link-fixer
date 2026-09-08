@@ -43,7 +43,7 @@ export const TEMPLATE_DEFAULT: VoucherTemplate = {
 <style>
   body{font-family:Roboto,Arial,sans-serif;margin:10px;background:#fff;color:#111}
   .wrap{display:flex;flex-wrap:wrap;gap:6px}
-  .v{width:200px;border:1px dashed #999;border-radius:8px;padding:8px;box-sizing:border-box}
+  .v{width:200px;border:1px solid #999;border-radius:8px;padding:8px;box-sizing:border-box}
   .v .t{font-size:11px;font-weight:bold;text-align:center;border-bottom:1px solid #ccc;padding-bottom:3px;margin-bottom:5px}
   .v .code{font-size:20px;font-weight:bold;text-align:center;letter-spacing:1px;font-family:Roboto,Arial,sans-serif}
   .v .price{font-size:13px;text-align:center;margin-top:2px}
@@ -133,18 +133,31 @@ function gridA4(perRow: number) {
 
 
 
+/** Ubah semua garis putus-putus (dashed/dotted) jadi garis utuh. */
+function rapikanGaris(html: string) {
+  return html.replace(/\b(dashed|dotted)\b/g, "solid");
+}
+
+/** Style tambahan supaya garis voucher selalu rapi & tidak terpotong. */
+const GARIS_RAPI = `<style>
+  *, *::before, *::after { border-style: solid !important; }
+  .v { overflow: hidden; }
+</style>`;
+
 export function buildHtml(t: VoucherTemplate, list: VoucherData[], perRow?: number) {
+  const header = rapikanGaris(t.header) + GARIS_RAPI;
+  const footer = rapikanGaris(t.footer);
   const rows = list
     .map((v) => {
-      const row = isiKonstanta(t.row, v);
+      const row = rapikanGaris(isiKonstanta(t.row, v));
       if (row.includes("data-voucher-brand") || row.includes("/voucher-logo.png")) return row;
       return row.replace(/(<[^>]+>)/, `$1${VOUCHER_LOGO}`);
     })
     .join("\n");
   if (perRow && perRow > 0) {
-    return `${t.header}${gridA4(perRow)}<div class="najwa-a4">${rows}</div>${t.footer}`;
+    return `${header}${gridA4(perRow)}<div class="najwa-a4">${rows}</div>${footer}`;
   }
-  return t.header + rows + t.footer;
+  return header + rows + footer;
 }
 
 export function printVouchers(t: VoucherTemplate, list: VoucherData[], perRow?: number) {
