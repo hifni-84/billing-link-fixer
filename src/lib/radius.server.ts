@@ -613,7 +613,7 @@ export async function report(): Promise<RadiusReport> {
 
   const dailyRows = [...dailyMap.entries()]
     .sort(([a], [b]) => b.localeCompare(a))
-    .slice(0, 30)
+    .slice(0, 400)
     .map(([date, value]) => ({ date, ...value }));
   const monthlyRows = [...monthlyMap.entries()]
     .sort(([a], [b]) => b.localeCompare(a))
