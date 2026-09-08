@@ -23,7 +23,7 @@ export type VoucherData = {
 };
 
 const KEY = "najwa_voucher_templates";
-const VOUCHER_LOGO = `<div data-voucher-brand style="display:flex;justify-content:center;align-items:center;margin:0"><img src="/voucher-logo.png" alt="NIMNET" style="display:block;width:auto;height:auto;max-width:118px;max-height:25px"></div>`;
+const VOUCHER_LOGO = `<div data-voucher-brand style="display:flex;justify-content:center;align-items:center;margin:0"><img src="/voucher-logo.png" alt="NIMNET" style="display:block;width:auto;height:auto;max-width:170px;max-height:40px"></div>`;
 
 export const KONSTANTA: { code: string; desc: string }[] = [
   { code: "%no_urut%", desc: "Nomor urut voucher" },
@@ -123,8 +123,8 @@ function gridA4(perRow: number) {
   /* rapatkan isi voucher agar muat 33 per lembar */
   .najwa-a4 > * > * { margin: 0 !important; padding: 0 !important; }
   .najwa-a4 .t { font-size: 7px !important; margin-bottom: 1px !important; }
-  .najwa-a4 [data-voucher-brand] { height: 11px !important; margin-bottom: 0 !important; }
-  .najwa-a4 [data-voucher-brand] img { max-width: 62px !important; max-height: 11px !important; }
+  .najwa-a4 [data-voucher-brand] { height: 16px !important; margin-bottom: 0 !important; }
+  .najwa-a4 [data-voucher-brand] img { max-width: 92px !important; max-height: 16px !important; }
   .najwa-a4 .code { font-size: 13px !important; }
   .najwa-a4 .price { font-size: 9px !important; }
   .najwa-a4 .meta { font-size: 6.5px !important; border-top: none !important; }
