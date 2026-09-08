@@ -94,6 +94,7 @@ const KARAKTER = [
     chars: "abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789",
   },
   { id: "kecil", label: "abcdefghijkl", chars: "abcdefghijkmnpqrstuvwxyz" },
+  { id: "kecil-angka", label: "abc1234", chars: "abcdefghijkmnpqrstuvwxyz123456789" },
   { id: "besar-angka", label: "ABCDEFG01234", chars: "ABCDEFGHJKLMNPQRSTUVWXYZ23456789" },
   { id: "besar", label: "ABCDEFGHIJKL", chars: "ABCDEFGHJKLMNPQRSTUVWXYZ" },
   { id: "angka", label: "0123456789", chars: "0123456789" },
