@@ -43,11 +43,11 @@ export function printInvoice(
   });
   const esc = (s: string) =>
     String(s ?? "").replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c] ?? c);
-  const html = `<!doctype html><html lang="id"><head><meta charset="utf-8">
+  const html = `<!doctype html><html lang="id"><head><meta charset="utf-8"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap">
 <title>Invoice #${inv.id} - ${esc(opt.merchant)}</title>
 <style>
  *{box-sizing:border-box}
- body{font-family:ui-sans-serif,system-ui,Arial,sans-serif;color:#111;margin:0;padding:32px}
+ body{font-family:Roboto,Arial,sans-serif;color:#111;margin:0;padding:32px}
  .head{display:flex;align-items:center;gap:16px;border-bottom:2px solid #111;padding-bottom:16px}
  .head img{max-height:64px;max-width:180px;object-fit:contain}
  h1{font-size:20px;margin:0}
