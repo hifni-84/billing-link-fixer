@@ -49,6 +49,7 @@ function LaporanPage() {
   const [range, setRange] = useState("30");
   const [plan, setPlan] = useState("all");
   const [service, setService] = useState("all");
+  const [bulan, setBulan] = useState("0");
 
   const planOptions = useMemo(
     () =>
@@ -63,16 +64,18 @@ function LaporanPage() {
     const limit = Number(range);
     const since =
       limit === 0 ? "" : new Date(Date.now() - limit * 86400000).toISOString().slice(0, 10);
+    const inPeriode = (date: string) =>
+      bulan !== "0" ? date.slice(5, 7) === bulan.padStart(2, "0") : limit === 0 || date >= since;
     const dailyPlans = (report.data?.dailyPlans ?? []).filter(
       (d) =>
-        (limit === 0 || d.date >= since) &&
+        inPeriode(d.date) &&
         (plan === "all" || d.plan === plan) &&
         (service === "all" || d.service === service),
     );
 
     let filtered: { date: string; total: number; count: number }[];
     if (plan === "all" && service === "all") {
-      filtered = (report.data?.daily ?? []).filter((d) => limit === 0 || d.date >= since);
+      filtered = (report.data?.daily ?? []).filter((d) => inPeriode(d.date));
     } else {
       const map = new Map<string, { total: number; count: number }>();
       for (const d of dailyPlans) {
@@ -111,7 +114,7 @@ function LaporanPage() {
       count: filtered.reduce((s, d) => s + d.count, 0),
       unsold: report.data?.unsold ?? 0,
     };
-  }, [report.data, range, plan, service]);
+  }, [report.data, range, plan, service, bulan]);
 
   const exportCsv = () => {
     const lines = ["tanggal,profil_voucher,jumlah_voucher,pendapatan"];
