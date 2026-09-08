@@ -23,7 +23,7 @@ export type VoucherData = {
 };
 
 const KEY = "najwa_voucher_templates";
-const VOUCHER_LOGO = `<div data-voucher-brand style="display:flex;justify-content:center;align-items:center;margin:0 0 5px"><img src="/voucher-logo.png" alt="NIMNET" style="display:block;width:auto;height:auto;max-width:118px;max-height:25px"></div>`;
+const VOUCHER_LOGO = `<div data-voucher-brand style="display:flex;justify-content:center;align-items:center;margin:0"><img src="/voucher-logo.png" alt="NIMNET" style="display:block;width:auto;height:auto;max-width:118px;max-height:25px"></div>`;
 
 export const KONSTANTA: { code: string; desc: string }[] = [
   { code: "%no_urut%", desc: "Nomor urut voucher" },
@@ -133,23 +133,18 @@ function gridA4(perRow: number) {
 
 
 
-/** Ubah semua garis putus-putus (dashed/dotted) jadi garis utuh. */
-function rapikanGaris(html: string) {
-  return html.replace(/\b(dashed|dotted)\b/g, "solid");
-}
-
-/** Style tambahan supaya garis voucher selalu rapi & tidak terpotong. */
+/** Pertahankan desain template; rapikan hanya garis vertikal kanan yang terputus. */
 const GARIS_RAPI = `<style>
-  *, *::before, *::after { border-style: solid !important; }
-  .v { overflow: hidden; }
+  *, *::before, *::after { border-right-style: solid !important; }
+  [data-voucher-brand] { margin-bottom: 0 !important; }
 </style>`;
 
 export function buildHtml(t: VoucherTemplate, list: VoucherData[], perRow?: number) {
-  const header = rapikanGaris(t.header) + GARIS_RAPI;
-  const footer = rapikanGaris(t.footer);
+  const header = t.header + GARIS_RAPI;
+  const footer = t.footer;
   const rows = list
     .map((v) => {
-      const row = rapikanGaris(isiKonstanta(t.row, v));
+      const row = isiKonstanta(t.row, v);
       if (row.includes("data-voucher-brand") || row.includes("/voucher-logo.png")) return row;
       return row.replace(/(<[^>]+>)/, `$1${VOUCHER_LOGO}`);
     })
