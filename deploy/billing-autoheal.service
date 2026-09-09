@@ -1,12 +1,12 @@
 [Unit]
-Description=Najwa Billing - pemulihan otomatis (RADIUS/MySQL/sesi hantu)
+Description=NBS - pemeriksaan otomatis RADIUS dan layanan billing
 After=network-online.target mariadb.service mysql.service freeradius.service
 Wants=network-online.target
 
 [Service]
 Type=oneshot
 WorkingDirectory=/opt/mikrotik-billing
-ExecStart=/bin/bash /opt/mikrotik-billing/deploy/fix-setelah-mati-lampu.sh
+ExecStart=/bin/bash /opt/mikrotik-billing/deploy/autoheal-check.sh
 StandardOutput=append:/var/log/billing-autoheal.log
 StandardError=append:/var/log/billing-autoheal.log
-TimeoutStartSec=900
+TimeoutStartSec=60

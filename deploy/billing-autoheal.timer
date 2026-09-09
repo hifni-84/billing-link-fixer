@@ -1,10 +1,10 @@
 [Unit]
-Description=Jalankan pemulihan otomatis Najwa Billing saat boot dan berkala
+Description=Periksa kesehatan NBS saat boot dan setiap 15 menit
 
 [Timer]
 # 1 menit setelah server hidup (mis. setelah mati lampu)
 OnBootSec=60
-# lalu cek ulang setiap 15 menit
+# lalu cek ulang setiap 15 menit tanpa restart bila layanan sehat
 OnUnitActiveSec=15min
 Persistent=true
 Unit=billing-autoheal.service
