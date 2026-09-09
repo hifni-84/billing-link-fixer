@@ -35,6 +35,10 @@ export type RadiusUser = {
   online: number;
   /** MAC address terakhir yang login memakai user ini */
   mac?: string | null;
+  /** total byte upload (dari pelanggan) seluruh sesi */
+  upload_bytes?: number | string | null;
+  /** total byte download (ke pelanggan) seluruh sesi */
+  download_bytes?: number | string | null;
 };
 
 export type RadiusSession = {

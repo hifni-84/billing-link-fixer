@@ -297,7 +297,13 @@ export async function listUsers(): Promise<RadiusUser[]> {
               ORDER BY a2.acctstoptime IS NULL DESC,
                        COALESCE(a2.acctupdatetime, a2.acctstarttime) DESC
               LIMIT 1
-            ) AS mac
+            ) AS mac,
+            (SELECT COALESCE(SUM(a3.acctinputoctets), 0) FROM radacct a3
+              WHERE a3.username = v.username
+            ) AS upload_bytes,
+            (SELECT COALESCE(SUM(a4.acctoutputoctets), 0) FROM radacct a4
+              WHERE a4.username = v.username
+            ) AS download_bytes
        FROM billing_voucher v
       ORDER BY v.created_at DESC, v.username`,
   );
