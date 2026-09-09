@@ -89,6 +89,55 @@ function PaketPage() {
   const [pService, setPService] = useState<"hotspot" | "pppoe">("hotspot");
   const [pIntegrate, setPIntegrate] = useState(true);
   const [pPortal, setPPortal] = useState(false);
+  const [editing, setEditing] = useState(false);
+
+  const resetForm = () => {
+    setPName("");
+    setPPrice("");
+    setPCost("");
+    setPRate("2M/2M");
+    setPDays("1");
+    setPUnit("hari");
+    setPShared("1");
+    setPService("hotspot");
+    setPIntegrate(true);
+    setPPortal(false);
+    setEditing(false);
+  };
+
+  const loadPlan = (p: RadiusPlan) => {
+    const sec = p.validity_seconds;
+    let days = "1";
+    let unit: "menit" | "jam" | "hari" | "bulan" = "hari";
+    if (sec % 2592000 === 0 && sec >= 2592000) {
+      days = String(sec / 2592000);
+      unit = "bulan";
+    } else if (sec % 86400 === 0 && sec >= 86400) {
+      days = String(sec / 86400);
+      unit = "hari";
+    } else if (sec % 3600 === 0 && sec >= 3600) {
+      days = String(sec / 3600);
+      unit = "jam";
+    } else if (sec % 60 === 0 && sec >= 60) {
+      days = String(sec / 60);
+      unit = "menit";
+    } else {
+      days = String(Math.round(sec / 86400));
+      unit = "hari";
+    }
+    setPName(p.name);
+    setPPrice(String(p.price));
+    setPCost(String(p.cost_price ?? 0));
+    setPRate(p.rate_limit || "2M/2M");
+    setPDays(days);
+    setPUnit(unit);
+    setPShared(String(p.shared_users));
+    setPService(p.service);
+    setPPortal(!!p.portal);
+    setPIntegrate(true);
+    setEditing(true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   return (
     <>
