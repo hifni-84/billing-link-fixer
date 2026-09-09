@@ -24,8 +24,8 @@ if [ "${1:-}" = "--hapus" ] || [ "${1:-}" = "--remove" ]; then
   exit 0
 fi
 
-if [ ! -f "$APP_DIR/deploy/fix-setelah-mati-lampu.sh" ]; then
-  echo "Tidak menemukan $APP_DIR/deploy/fix-setelah-mati-lampu.sh"
+if [ ! -f "$APP_DIR/deploy/fix-setelah-mati-lampu.sh" ] || [ ! -f "$APP_DIR/deploy/autoheal-check.sh" ]; then
+  echo "File pemulihan otomatis tidak lengkap di $APP_DIR/deploy"
   echo "Jalankan dulu: cd $APP_DIR && sudo git pull origin main"
   exit 1
 fi
@@ -55,6 +55,6 @@ systemctl start billing-autoheal.service || true
 systemctl --no-pager list-timers billing-autoheal.timer || true
 
 echo
-echo "Selesai. Server akan memperbaiki diri sendiri 1 menit setelah listrik kembali,"
-echo "lalu memeriksa ulang setiap 15 menit."
+echo "Selesai. Server akan memeriksa layanan 1 menit setelah listrik kembali,"
+echo "lalu setiap 15 menit. RADIUS hanya direstart jika benar-benar bermasalah."
 echo "Lihat catatan: sudo tail -n 50 /var/log/billing-autoheal.log"
