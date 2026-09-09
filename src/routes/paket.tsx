@@ -316,15 +316,23 @@ function PaketPage() {
                   };
                   savePlan.mutate(plan, {
                     onSuccess: () => {
-                      toast.success("Paket disimpan");
-                      setPName("");
+                      toast.success(editing ? "Paket diperbarui" : "Paket disimpan");
+                      resetForm();
                       if (pIntegrate) void syncPlan(plan);
                     },
                     onError: (e: Error) => toast.error(e.message),
                   });
                 }}
               >
-                <Plus className="size-4" /> Simpan Paket
+                {editing ? (
+                  <>
+                    <Pencil className="size-4" /> Perbarui Paket
+                  </>
+                ) : (
+                  <>
+                    <Plus className="size-4" /> Simpan Paket
+                  </>
+                )}
               </Button>
             </div>
           </div>
