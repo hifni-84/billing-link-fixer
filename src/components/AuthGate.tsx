@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from "react";
-import { LockKeyhole } from "lucide-react";
 import { toast } from "sonner";
+
+import nbsLogo from "@/assets/nbs-logo.png";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,9 +29,7 @@ function LoginScreen() {
     <div className="flex min-h-screen w-full items-center justify-center bg-background px-4">
       <form onSubmit={submit} className="panel w-full max-w-sm p-7">
         <div className="mb-6 flex flex-col items-center gap-2 text-center">
-          <span className="flex size-12 items-center justify-center rounded-full bg-secondary text-primary">
-            <LockKeyhole className="size-6" />
-          </span>
+          <img src={nbsLogo} alt="NBS" className="h-12 w-auto rounded-md object-contain" />
           <h1 className="text-xl font-semibold tracking-tight">BILLING RADIUS</h1>
           <p className="text-sm text-muted-foreground">Masuk untuk mengelola hotspot & PPPoE</p>
         </div>
