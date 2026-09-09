@@ -1005,6 +1005,15 @@ function VoucherPage() {
                       <TableCell className="mono-num text-xs">
                         {sisa === null ? "belum jalan" : sisa > 0 ? formatDuration(sisa) : "Habis"}
                       </TableCell>
+                      <TableCell className="mono-num text-xs">
+                        {formatBytes(Number(u.upload_bytes ?? 0))}
+                      </TableCell>
+                      <TableCell className="mono-num text-xs">
+                        {formatBytes(Number(u.download_bytes ?? 0))}
+                      </TableCell>
+                      <TableCell className="mono-num text-xs">
+                        {formatBytes(Number(u.upload_bytes ?? 0) + Number(u.download_bytes ?? 0))}
+                      </TableCell>
                       <TableCell>
                         {expired ? (
                           <Badge variant="destructive">Expired</Badge>
