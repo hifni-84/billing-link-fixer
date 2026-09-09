@@ -153,7 +153,7 @@ export function buildHtml(t: VoucherTemplate, list: VoucherData[], perRow?: numb
     .map((v) => {
       const row = rapikanIsiVoucher(isiKonstanta(t.row, v));
       if (row.includes("data-voucher-brand") || row.includes("/voucher-logo.png")) return row;
-      return row.replace(/(<[^>]+>)/, `$1${VOUCHER_LOGO}`);
+      return row.replace(/(<[^>]+>)/, `$1${isiKonstanta(VOUCHER_LOGO, v)}`);
     })
     .join("\n");
   if (perRow && perRow > 0) {
