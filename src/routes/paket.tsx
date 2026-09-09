@@ -350,7 +350,7 @@ function PaketPage() {
                 <TableHead>Harga Modal</TableHead>
                 <TableHead>Harga Jual</TableHead>
                 <TableHead>Portal</TableHead>
-                <TableHead className="w-24 text-right">Aksi</TableHead>
+                <TableHead className="w-32 text-right">Aksi</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
