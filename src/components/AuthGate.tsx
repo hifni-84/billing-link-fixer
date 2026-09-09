@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from "react";
-import { LockKeyhole } from "lucide-react";
 import { toast } from "sonner";
+
+import nbsLogo from "@/assets/nbs-logo.png";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
