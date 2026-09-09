@@ -153,7 +153,16 @@ function PaketPage() {
 
       <div className="space-y-6">
         <div className="panel p-5">
-          <h2 className="mb-4 text-sm font-semibold">Tambah / Ubah Paket</h2>
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-sm font-semibold">
+              {editing ? "Ubah Paket" : "Tambah Paket"}
+            </h2>
+            {editing && (
+              <Button variant="ghost" size="sm" onClick={resetForm}>
+                <X className="size-4" /> Batal
+              </Button>
+            )}
+          </div>
           <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-6">
             <div className="grid gap-2">
               <Label htmlFor="p-n">Nama Paket</Label>
