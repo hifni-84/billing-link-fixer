@@ -48,7 +48,7 @@ import {
   useRadiusUsers,
 } from "@/lib/radius-client";
 import { isRadiusExpired, radiusRemainingSeconds } from "@/lib/radius-types";
-import { formatDateTime, formatDuration, formatIDR } from "@/lib/mikrotik-types";
+import { formatBytes, formatDateTime, formatDuration, formatIDR } from "@/lib/mikrotik-types";
 import { useNow } from "@/lib/use-now";
 import {
   loadTemplates,
@@ -956,6 +956,9 @@ function VoucherPage() {
                   <TableHead>Login Pertama</TableHead>
                   <TableHead>Expired</TableHead>
                   <TableHead>Sisa Masa Aktif</TableHead>
+                  <TableHead>Upload</TableHead>
+                  <TableHead>Download</TableHead>
+                  <TableHead>Total Pemakaian</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Aktif</TableHead>
                   <TableHead className="w-24 text-right">Aksi</TableHead>
@@ -1001,6 +1004,15 @@ function VoucherPage() {
                       </TableCell>
                       <TableCell className="mono-num text-xs">
                         {sisa === null ? "belum jalan" : sisa > 0 ? formatDuration(sisa) : "Habis"}
+                      </TableCell>
+                      <TableCell className="mono-num text-xs">
+                        {formatBytes(Number(u.upload_bytes ?? 0))}
+                      </TableCell>
+                      <TableCell className="mono-num text-xs">
+                        {formatBytes(Number(u.download_bytes ?? 0))}
+                      </TableCell>
+                      <TableCell className="mono-num text-xs">
+                        {formatBytes(Number(u.upload_bytes ?? 0) + Number(u.download_bytes ?? 0))}
                       </TableCell>
                       <TableCell>
                         {expired ? (
@@ -1071,7 +1083,7 @@ function VoucherPage() {
                 })}
                 {daftar.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={15} className="py-10 text-center text-muted-foreground">
+                    <TableCell colSpan={18} className="py-10 text-center text-muted-foreground">
                       Belum ada user di database RADIUS.
                     </TableCell>
                   </TableRow>
