@@ -956,6 +956,9 @@ function VoucherPage() {
                   <TableHead>Login Pertama</TableHead>
                   <TableHead>Expired</TableHead>
                   <TableHead>Sisa Masa Aktif</TableHead>
+                  <TableHead>Upload</TableHead>
+                  <TableHead>Download</TableHead>
+                  <TableHead>Total Pemakaian</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Aktif</TableHead>
                   <TableHead className="w-24 text-right">Aksi</TableHead>
