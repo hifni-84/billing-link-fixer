@@ -23,7 +23,7 @@ export type VoucherData = {
 };
 
 const KEY = "najwa_voucher_templates";
-const VOUCHER_LOGO = `<div data-voucher-brand style="display:flex;justify-content:center;align-items:center;margin:0"><img src="/voucher-logo.png" alt="NIMNET" style="display:block;width:auto;height:auto;max-width:170px;max-height:40px"></div>`;
+const VOUCHER_LOGO = `<div data-voucher-brand style="display:flex;justify-content:space-between;align-items:center;gap:4px;margin:0"><span style="font-size:11px;font-weight:700;color:#111;white-space:nowrap">%no_urut%</span><img src="/voucher-logo.png" alt="NIMNET" style="display:block;width:auto;height:auto;max-width:170px;max-height:40px"></div>`;
 
 export const KONSTANTA: { code: string; desc: string }[] = [
   { code: "%no_urut%", desc: "Nomor urut voucher" },
@@ -124,7 +124,8 @@ function gridA4(perRow: number) {
   .najwa-a4 > * > * { margin: 0 !important; padding: 0 !important; }
   .najwa-a4 .t { font-size: 7px !important; margin-bottom: 1px !important; }
   .najwa-a4 [data-voucher-brand] { height: 16px !important; margin-bottom: 0 !important; }
-  .najwa-a4 [data-voucher-brand] img { max-width: 92px !important; max-height: 16px !important; }
+  .najwa-a4 [data-voucher-brand] span { font-size: 7px !important; }
+  .najwa-a4 [data-voucher-brand] img { max-width: 78px !important; max-height: 16px !important; }
   .najwa-a4 .code { font-size: 13px !important; }
   .najwa-a4 .price { font-size: 9px !important; }
   .najwa-a4 .meta { font-size: 6.5px !important; border-top: none !important; }
@@ -153,7 +154,7 @@ export function buildHtml(t: VoucherTemplate, list: VoucherData[], perRow?: numb
     .map((v) => {
       const row = rapikanIsiVoucher(isiKonstanta(t.row, v));
       if (row.includes("data-voucher-brand") || row.includes("/voucher-logo.png")) return row;
-      return row.replace(/(<[^>]+>)/, `$1${VOUCHER_LOGO}`);
+      return row.replace(/(<[^>]+>)/, `$1${isiKonstanta(VOUCHER_LOGO, v)}`);
     })
     .join("\n");
   if (perRow && perRow > 0) {
