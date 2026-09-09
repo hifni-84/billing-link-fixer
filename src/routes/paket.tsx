@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { Plus, RefreshCw, Trash2, UploadCloud } from "lucide-react";
+import { Pencil, Plus, RefreshCw, Trash2, UploadCloud, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { PageHeader } from "@/components/Shared";
