@@ -387,6 +387,14 @@ function PaketPage() {
                     <Button
                       size="icon"
                       variant="ghost"
+                      aria-label={`Edit paket ${p.name}`}
+                      onClick={() => loadPlan(p)}
+                    >
+                      <Pencil className="size-4" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
                       aria-label={`Integrasikan paket ${p.name} ke MikroTik`}
                       title={`Kirim ke ${targetLabel(pTarget)} sebagai profile`}
                       onClick={() => void syncPlan(p)}
