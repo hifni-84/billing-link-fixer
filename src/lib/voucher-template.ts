@@ -124,7 +124,8 @@ function gridA4(perRow: number) {
   .najwa-a4 > * > * { margin: 0 !important; padding: 0 !important; }
   .najwa-a4 .t { font-size: 7px !important; margin-bottom: 1px !important; }
   .najwa-a4 [data-voucher-brand] { height: 16px !important; margin-bottom: 0 !important; }
-  .najwa-a4 [data-voucher-brand] img { max-width: 92px !important; max-height: 16px !important; }
+  .najwa-a4 [data-voucher-brand] span { font-size: 7px !important; }
+  .najwa-a4 [data-voucher-brand] img { max-width: 78px !important; max-height: 16px !important; }
   .najwa-a4 .code { font-size: 13px !important; }
   .najwa-a4 .price { font-size: 9px !important; }
   .najwa-a4 .meta { font-size: 6.5px !important; border-top: none !important; }
