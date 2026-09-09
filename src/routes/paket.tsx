@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { Plus, RefreshCw, Trash2, UploadCloud } from "lucide-react";
+import { Pencil, Plus, RefreshCw, Trash2, UploadCloud, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { PageHeader } from "@/components/Shared";
@@ -89,6 +89,55 @@ function PaketPage() {
   const [pService, setPService] = useState<"hotspot" | "pppoe">("hotspot");
   const [pIntegrate, setPIntegrate] = useState(true);
   const [pPortal, setPPortal] = useState(false);
+  const [editing, setEditing] = useState(false);
+
+  const resetForm = () => {
+    setPName("");
+    setPPrice("");
+    setPCost("");
+    setPRate("2M/2M");
+    setPDays("1");
+    setPUnit("hari");
+    setPShared("1");
+    setPService("hotspot");
+    setPIntegrate(true);
+    setPPortal(false);
+    setEditing(false);
+  };
+
+  const loadPlan = (p: RadiusPlan) => {
+    const sec = p.validity_seconds;
+    let days = "1";
+    let unit: "menit" | "jam" | "hari" | "bulan" = "hari";
+    if (sec % 2592000 === 0 && sec >= 2592000) {
+      days = String(sec / 2592000);
+      unit = "bulan";
+    } else if (sec % 86400 === 0 && sec >= 86400) {
+      days = String(sec / 86400);
+      unit = "hari";
+    } else if (sec % 3600 === 0 && sec >= 3600) {
+      days = String(sec / 3600);
+      unit = "jam";
+    } else if (sec % 60 === 0 && sec >= 60) {
+      days = String(sec / 60);
+      unit = "menit";
+    } else {
+      days = String(Math.round(sec / 86400));
+      unit = "hari";
+    }
+    setPName(p.name);
+    setPPrice(String(p.price));
+    setPCost(String(p.cost_price ?? 0));
+    setPRate(p.rate_limit || "2M/2M");
+    setPDays(days);
+    setPUnit(unit);
+    setPShared(String(p.shared_users));
+    setPService(p.service);
+    setPPortal(!!p.portal);
+    setPIntegrate(true);
+    setEditing(true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   return (
     <>
@@ -104,7 +153,16 @@ function PaketPage() {
 
       <div className="space-y-6">
         <div className="panel p-5">
-          <h2 className="mb-4 text-sm font-semibold">Tambah / Ubah Paket</h2>
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-sm font-semibold">
+              {editing ? "Ubah Paket" : "Tambah Paket"}
+            </h2>
+            {editing && (
+              <Button variant="ghost" size="sm" onClick={resetForm}>
+                <X className="size-4" /> Batal
+              </Button>
+            )}
+          </div>
           <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-6">
             <div className="grid gap-2">
               <Label htmlFor="p-n">Nama Paket</Label>
@@ -258,15 +316,23 @@ function PaketPage() {
                   };
                   savePlan.mutate(plan, {
                     onSuccess: () => {
-                      toast.success("Paket disimpan");
-                      setPName("");
+                      toast.success(editing ? "Paket diperbarui" : "Paket disimpan");
+                      resetForm();
                       if (pIntegrate) void syncPlan(plan);
                     },
                     onError: (e: Error) => toast.error(e.message),
                   });
                 }}
               >
-                <Plus className="size-4" /> Simpan Paket
+                {editing ? (
+                  <>
+                    <Pencil className="size-4" /> Perbarui Paket
+                  </>
+                ) : (
+                  <>
+                    <Plus className="size-4" /> Simpan Paket
+                  </>
+                )}
               </Button>
             </div>
           </div>
@@ -284,7 +350,7 @@ function PaketPage() {
                 <TableHead>Harga Modal</TableHead>
                 <TableHead>Harga Jual</TableHead>
                 <TableHead>Portal</TableHead>
-                <TableHead className="w-24 text-right">Aksi</TableHead>
+                <TableHead className="w-32 text-right">Aksi</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -318,6 +384,14 @@ function PaketPage() {
                     />
                   </TableCell>
                   <TableCell className="text-right">
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      aria-label={`Edit paket ${p.name}`}
+                      onClick={() => loadPlan(p)}
+                    >
+                      <Pencil className="size-4" />
+                    </Button>
                     <Button
                       size="icon"
                       variant="ghost"
