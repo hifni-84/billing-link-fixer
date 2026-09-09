@@ -48,7 +48,7 @@ import {
   useRadiusUsers,
 } from "@/lib/radius-client";
 import { isRadiusExpired, radiusRemainingSeconds } from "@/lib/radius-types";
-import { formatDateTime, formatDuration, formatIDR } from "@/lib/mikrotik-types";
+import { formatBytes, formatDateTime, formatDuration, formatIDR } from "@/lib/mikrotik-types";
 import { useNow } from "@/lib/use-now";
 import {
   loadTemplates,
@@ -1083,7 +1083,7 @@ function VoucherPage() {
                 })}
                 {daftar.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={15} className="py-10 text-center text-muted-foreground">
+                    <TableCell colSpan={18} className="py-10 text-center text-muted-foreground">
                       Belum ada user di database RADIUS.
                     </TableCell>
                   </TableRow>
