@@ -23,7 +23,7 @@ export type VoucherData = {
 };
 
 const KEY = "najwa_voucher_templates";
-const VOUCHER_LOGO = `<div data-voucher-brand style="display:flex;justify-content:center;align-items:center;gap:4px;margin:0"><span style="font-size:11px;font-weight:700;color:#111;white-space:nowrap">%no_urut%</span><img src="/voucher-logo.png" alt="NIMNET" style="display:block;width:auto;height:auto;max-width:170px;max-height:40px"></div>`;
+const VOUCHER_LOGO = `<div data-voucher-brand style="display:flex;justify-content:center;align-items:center;position:relative;margin:0"><span style="position:absolute;left:0;font-size:11px;font-weight:700;color:#111;white-space:nowrap">%no_urut%</span><img src="/voucher-logo.png" alt="NIMNET" style="display:block;width:auto;height:auto;max-width:170px;max-height:40px"></div>`;
 
 export const KONSTANTA: { code: string; desc: string }[] = [
   { code: "%no_urut%", desc: "Nomor urut voucher" },
