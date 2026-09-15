@@ -294,6 +294,7 @@ function VoucherPage() {
 
   useEffect(() => {
     if (!printOpen) return;
+    document.body.style.pointerEvents = "";
     const tutupDenganEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") setPrintOpen(false);
     };
@@ -1158,7 +1159,7 @@ function VoucherPage() {
       </Dialog>
       {printOpen && (
         <div
-          className="fixed inset-0 z-[60] flex items-center justify-center bg-foreground/80 p-4"
+          className="pointer-events-auto fixed inset-0 z-[60] flex items-center justify-center bg-foreground/80 p-4"
           onMouseDown={(event) => {
             if (event.target === event.currentTarget) setPrintOpen(false);
           }}
