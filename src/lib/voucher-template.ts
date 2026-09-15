@@ -171,6 +171,13 @@ export function printVouchers(t: VoucherTemplate, list: VoucherData[], perRow?: 
   w.document.write(html);
   w.document.close();
   w.focus();
+  w.onafterprint = () => {
+    try {
+      w.close();
+    } catch {
+      /* ignore */
+    }
+  };
   setTimeout(() => w.print(), 400);
   return true;
 }

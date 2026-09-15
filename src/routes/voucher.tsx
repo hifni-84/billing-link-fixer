@@ -315,8 +315,8 @@ function VoucherPage() {
         quota: p?.rate_limit || "-",
       };
     });
-    if (!printVouchers(t, data, kolom)) toast.error("Izinkan popup untuk mencetak");
-    else setPrintOpen(false);
+    setPrintOpen(false);
+    if (!printVouchers(t, data, kolom)) toast.error("Izinkan popup browser untuk mencetak voucher");
   };
 
   const tampil = useMemo(() => daftar.slice(0, 1000), [daftar]);
