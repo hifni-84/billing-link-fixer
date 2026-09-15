@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Ban, Pencil, Play, Plus, Printer, RefreshCw, RotateCcw, Trash2 } from "lucide-react";
+import { Ban, Pencil, Play, Plus, Printer, RefreshCw, RotateCcw, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { PageHeader } from "@/components/Shared";
@@ -291,6 +291,16 @@ function VoucherPage() {
   const [antrian, setAntrian] = useState<
     { username: string; password: string; plan: string; price: number }[]
   >([]);
+
+  useEffect(() => {
+    if (!printOpen) return;
+    document.body.style.pointerEvents = "";
+    const tutupDenganEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setPrintOpen(false);
+    };
+    document.addEventListener("keydown", tutupDenganEscape);
+    return () => document.removeEventListener("keydown", tutupDenganEscape);
+  }, [printOpen]);
 
   const bukaCetak = (
     list: { username: string; password: string; plan: string; price: number }[],
@@ -1147,56 +1157,74 @@ function VoucherPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      <Dialog open={printOpen} onOpenChange={setPrintOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Print Voucher</DialogTitle>
-            <DialogDescription>
-              {antrian.length} voucher siap dicetak di kertas A4.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-2">
-            <div className="grid grid-cols-3 items-center gap-3">
-              <Label className="text-right">Template</Label>
-              <div className="col-span-2">
-                <Select value={tplId} onValueChange={setTplId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Pilih template" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {templates.map((x) => (
-                      <SelectItem key={x.id} value={x.id}>
-                        {x.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+      {printOpen && (
+        <div
+          className="pointer-events-auto fixed inset-0 z-[60] flex items-center justify-center bg-foreground/80 p-4"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setPrintOpen(false);
+          }}
+        >
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="print-voucher-title"
+            className="relative grid w-full max-w-lg gap-4 rounded-lg border bg-background p-6 shadow-lg"
+          >
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="absolute right-3 top-3"
+              aria-label="Tutup"
+              onClick={() => setPrintOpen(false)}
+            >
+              <X className="size-4" />
+            </Button>
+            <div className="flex flex-col space-y-1.5 pr-10">
+              <h2 id="print-voucher-title" className="text-lg font-semibold leading-none">
+                Print Voucher
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                {antrian.length} voucher siap dicetak di kertas A4.
+              </p>
+            </div>
+            <div className="grid gap-4 py-2">
+              <div className="grid grid-cols-3 items-center gap-3">
+                <Label htmlFor="print-template" className="text-right">Template</Label>
+                <select
+                  id="print-template"
+                  className="col-span-2 h-9 rounded-md border border-input bg-background px-3 text-sm"
+                  value={tplId}
+                  onChange={(event) => setTplId(event.target.value)}
+                >
+                  {templates.map((template) => (
+                    <option key={template.id} value={template.id}>{template.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="grid grid-cols-3 items-center gap-3">
+                <Label htmlFor="per-row" className="text-right">Voucher per Baris</Label>
+                <Input
+                  id="per-row"
+                  className="col-span-2"
+                  inputMode="numeric"
+                  placeholder="mis. 3"
+                  value={perRow}
+                  onChange={(e) => setPerRow(e.target.value)}
+                />
               </div>
             </div>
-            <div className="grid grid-cols-3 items-center gap-3">
-              <Label htmlFor="per-row" className="text-right">
-                Voucher per Baris
-              </Label>
-              <Input
-                id="per-row"
-                className="col-span-2"
-                inputMode="numeric"
-                placeholder="mis. 3"
-                value={perRow}
-                onChange={(e) => setPerRow(e.target.value)}
-              />
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <Button type="button" variant="destructive" onClick={() => setPrintOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="button" onClick={cetakSekarang} disabled={!antrian.length}>
+                <Printer className="size-4" /> Submit
+              </Button>
             </div>
-          </div>
-          <DialogFooter>
-            <Button variant="destructive" onClick={() => setPrintOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={cetakSekarang} disabled={!antrian.length}>
-              <Printer className="size-4" /> Submit
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </section>
+        </div>
+      )}
     </>
   );
 }
