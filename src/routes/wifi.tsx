@@ -162,7 +162,7 @@ function WifiPortalPage() {
             </span>
             <div className="min-w-0 flex-1 text-sm">
               <p className="font-medium">
-                {info.manufacturerLabel ?? `${info.device.manufacturer} ${info.device.model}`.trim()}
+                {`${info.device.manufacturer} ${info.device.model}`.trim() || "Modem Pelanggan"}
               </p>
               <p className="text-muted-foreground">
                 Akun: {info.username}
