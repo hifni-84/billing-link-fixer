@@ -284,6 +284,7 @@ export async function acsListDevices(nbiUrl?: string): Promise<AcsDevice[]> {
   const projection = [
     "_id",
     "_lastInform",
+    "_tags",
     "InternetGatewayDevice.DeviceInfo.SerialNumber",
     "InternetGatewayDevice.DeviceInfo.Manufacturer",
     "InternetGatewayDevice.DeviceInfo.ModelName",

@@ -37,6 +37,7 @@ import {
   acsParamsSet,
 } from "@/lib/genieacs.functions";
 import { useAcs, writeAcs } from "@/lib/genieacs-store";
+import { settingsSave } from "@/lib/radius.functions";
 
 export const Route = createFileRoute("/onu")({
   head: () => ({
@@ -84,10 +85,21 @@ function OnuPage() {
     return t.includes(q.trim().toLowerCase());
   });
 
-  const simpanNbi = () => {
-    writeAcs({ ...panel, nbiUrl: nbi || panel.nbiUrl });
-    toast.success("URL API GenieACS disimpan");
-    setTimeout(() => qc.invalidateQueries({ queryKey: ["acs-devices"] }), 100);
+  const [savingNbi, setSavingNbi] = useState(false);
+  const simpanNbi = async () => {
+    const url = (nbi || panel.nbiUrl).trim();
+    setSavingNbi(true);
+    try {
+      const result = await settingsSave({ data: { entries: { "genieacs.nbiUrl": url } } });
+      if (!result.ok) throw new Error(result.error);
+      writeAcs({ ...panel, nbiUrl: url });
+      toast.success("URL API GenieACS disimpan untuk portal pelanggan");
+      setTimeout(() => qc.invalidateQueries({ queryKey: ["acs-devices"] }), 100);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Gagal menyimpan URL API GenieACS");
+    } finally {
+      setSavingNbi(false);
+    }
   };
 
   return (
@@ -108,7 +120,7 @@ function OnuPage() {
               onChange={(e) => setNbi(e.target.value)}
             />
           </div>
-          <Button onClick={simpanNbi} className="gap-2">
+          <Button onClick={simpanNbi} disabled={savingNbi} className="gap-2">
             <Save className="h-4 w-4" /> Simpan
           </Button>
         </div>
