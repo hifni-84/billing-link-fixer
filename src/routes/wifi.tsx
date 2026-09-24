@@ -172,7 +172,9 @@ function WifiPortalPage() {
               <p className={info.device.online ? "text-primary" : "text-muted-foreground"}>
                 {info.device.online
                    ? "Laporan modem sesuai jadwal"
-                   : `Laporan modem terlambat (terakhir: ${tanggal(info.device.lastInform)})`}
+                   : info.device.lastInform
+                     ? `Laporan modem terlambat (terakhir: ${tanggal(info.device.lastInform)})`
+                     : "Belum ada laporan modem ke pengelola"}
               </p>
             </div>
             <Button variant="ghost" size="sm" onClick={keluar}>
