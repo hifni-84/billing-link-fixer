@@ -97,7 +97,14 @@ const bandsOf = (detail: Awaited<ReturnType<typeof acsGetDevice>>) =>
   detail.wifi
     // Hanya tampilkan SSID yang memiliki password (PPPoE).
     // SSID hotspot (tanpa password/keyPath) tidak ditampilkan di portal pelanggan.
-    .filter((w) => w.ssidPath && w.keyPath)
+    .filter(
+      (w) =>
+        w.ssidPath &&
+        w.keyPath &&
+        !w.open &&
+        w.enabled !== false &&
+        !/hotspot|voucher|free|gratis/i.test(w.ssid ?? ""),
+    )
     .map<CustomerWifiBand>((w) => ({
       index: w.index,
       band: w.band || (Number(w.index) >= 5 ? "5 GHz" : "2.4 GHz"),

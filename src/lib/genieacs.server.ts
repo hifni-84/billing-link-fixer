@@ -401,6 +401,20 @@ export async function acsGetDevice(id: string, nbiUrl?: string): Promise<AcsDevi
       if (ap) keyPath = ap;
     }
     const enablePath = `${root}.Enable` in params ? `${root}.Enable` : null;
+    // Deteksi SSID terbuka (tanpa password), biasanya SSID hotspot.
+    const beacon = String(params[`${root}.BeaconType`] ?? "").toLowerCase();
+    const basicEnc = String(params[`${root}.BasicEncryptionModes`] ?? "").toLowerCase();
+    const apMode = m181
+      ? String(
+          Object.entries(params).find(([k]) =>
+            new RegExp(`WiFi\\.AccessPoint\\.${index}\\.Security\\.ModeEnabled$`).test(k),
+          )?.[1] ?? "",
+        ).toLowerCase()
+      : "";
+    const open =
+      beacon === "none" ||
+      (beacon === "basic" && (basicEnc === "" || basicEnc === "none")) ||
+      apMode === "none";
     const band =
       params[`${root}.OperatingFrequencyBand`] ||
       params[`${root}.Standard`] ||
@@ -415,6 +429,7 @@ export async function acsGetDevice(id: string, nbiUrl?: string): Promise<AcsDevi
       enabled: enablePath ? params[enablePath] === "true" || params[enablePath] === "1" : null,
       enablePath,
       clients: clientsOf(params, root),
+      open,
     });
   }
 
