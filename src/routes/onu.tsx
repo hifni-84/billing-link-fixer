@@ -146,7 +146,7 @@ function OnuPage() {
       </div>
 
       <p className="text-xs text-muted-foreground">
-        Jika User PPPoE kosong, akun pelanggan belum dapat dikenali oleh portal WiFi. Periksa username di WAN modem atau beri tag sesuai username internet pada modem di GenieACS. Status laporan modem tidak selalu sama dengan status internet pelanggan.
+        Jika User PPPoE kosong, portal WiFi hanya bisa mengenali modem bila ada tag yang sama persis dengan username internet pelanggan. Periksa username di WAN modem atau tag perangkat di GenieACS. Status laporan modem tidak sama dengan status internet pelanggan.
       </p>
 
       {devices.data && !devices.data.ok ? (
