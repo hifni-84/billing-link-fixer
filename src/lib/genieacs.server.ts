@@ -71,12 +71,16 @@ export const ACS_UI_URL = `http://${ACS_HOST}:3001`;
 /** Billing di server yang sama memakai loopback; alamat LAN hanya cadangan.
  * URL lama dari pengaturan diabaikan agar tidak mengarah ke server lain. */
 async function fetchNbi(_ignored: string | undefined, path: string, init?: RequestInit) {
-  const endpoints = ["http://127.0.0.1:7557", ACS_NBI_URL];
+  // Jangan ulangi perintah tulis ke endpoint lain jika respons hilang:
+  // modem mungkin sudah menerima tugasnya meskipun koneksi timeout.
+  const endpoints = init?.method === "POST"
+    ? ["http://127.0.0.1:7557"]
+    : ["http://127.0.0.1:7557", ACS_NBI_URL];
   for (const endpoint of endpoints) {
     try {
       return await fetch(`${endpoint}${path}`, {
         ...init,
-        signal: AbortSignal.timeout(5000),
+        signal: AbortSignal.timeout(init?.method === "POST" ? 30000 : 5000),
         headers: { "content-type": "application/json", ...(init?.headers ?? {}) },
       });
     } catch {
@@ -85,7 +89,7 @@ async function fetchNbi(_ignored: string | undefined, path: string, init?: Reque
     }
   }
   throw new Error(
-    "Server billing tidak dapat menjangkau GenieACS di 127.0.0.1:7557 maupun 192.168.23.5:7557. " +
+    `Server billing tidak dapat menjangkau GenieACS di ${endpoints.map((url) => url.replace("http://", "")).join(" maupun ")}. ` +
       "Periksa apakah layanan genieacs-nbi aktif dan port 7557 dapat diakses dari server billing.",
   );
 }
