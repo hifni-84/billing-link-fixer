@@ -256,7 +256,7 @@ function summarize(doc: Record<string, unknown>, params: Record<string, string>)
     : "";
   // This reflects recent TR-069 informs, NOT the customer's PPPoE/Internet state.
   // A longer periodic-inform interval should not be mislabeled as an outage.
-  const periodicInterval = Number(pick(params, /\.ManagementServer\.PeriodicInformInterval$/)?.value);
+  const periodicInterval = Number(pick(params, /(?:^|\.)ManagementServer\.PeriodicInformInterval$/)?.value);
   const recentWindowMs = Number.isFinite(periodicInterval) && periodicInterval > 0
     ? Math.max(20 * 60, Math.min(periodicInterval * 2, 24 * 60 * 60)) * 1000
     : 20 * 60 * 1000;

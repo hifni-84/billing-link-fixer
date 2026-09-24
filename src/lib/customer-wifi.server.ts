@@ -40,7 +40,7 @@ async function verifyCustomer(username: string, password: string) {
   const rows = await query<VoucherRow>(
     `SELECT username, plan, expires_at, disabled
        FROM billing_voucher
-       WHERE LOWER(username) = LOWER(?) AND password = ? AND service = 'pppoe'
+       WHERE LOWER(username) = LOWER(?) AND password = ? AND LOWER(service) = 'pppoe'
       LIMIT 1`,
     [username.trim(), password],
   );
