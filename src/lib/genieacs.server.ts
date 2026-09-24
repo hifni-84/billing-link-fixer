@@ -71,16 +71,37 @@ export const ACS_UI_URL = `http://${ACS_HOST}:3001`;
 /** Billing di server yang sama memakai loopback; alamat LAN hanya cadangan.
  * URL lama dari pengaturan diabaikan agar tidak mengarah ke server lain. */
 async function fetchNbi(_ignored: string | undefined, path: string, init?: RequestInit) {
-  // Jangan ulangi perintah tulis ke endpoint lain jika respons hilang:
-  // modem mungkin sudah menerima tugasnya meskipun koneksi timeout.
-  const endpoints = init?.method === "POST"
-    ? ["http://127.0.0.1:7557"]
-    : ["http://127.0.0.1:7557", ACS_NBI_URL];
+  const endpoints = ["http://127.0.0.1:7557", ACS_NBI_URL];
+  // Untuk perintah tulis, cari endpoint dengan GET terlebih dahulu. Jangan
+  // mengulang POST setelah timeout: tugas mungkin sudah diterima modem.
+  if (init?.method === "POST") {
+    for (const endpoint of endpoints) {
+      try {
+        const probe = await fetch(`${endpoint}/devices/?projection=_id&limit=1`, {
+          signal: AbortSignal.timeout(5000),
+        });
+        if (probe.ok) {
+          return await fetch(`${endpoint}${path}`, {
+            ...init,
+            signal: AbortSignal.timeout(30000),
+            headers: { "content-type": "application/json", ...(init.headers ?? {}) },
+          });
+        }
+        throw new Error(`GenieACS NBI ${probe.status} di ${endpoint}`);
+      } catch (error) {
+        if (error instanceof Error && error.message.startsWith("GenieACS NBI")) throw error;
+        // Hanya lanjut ke alamat LAN jika probe GET gagal; jangan ulangi POST.
+        if (error instanceof Error && error.message.includes("POST")) throw error;
+        if (endpoint === endpoints[0]) continue;
+        throw new Error("Tidak bisa mengirim perintah ke GenieACS. Periksa sambungan server billing ke port 7557.");
+      }
+    }
+  }
   for (const endpoint of endpoints) {
     try {
       return await fetch(`${endpoint}${path}`, {
         ...init,
-        signal: AbortSignal.timeout(init?.method === "POST" ? 30000 : 5000),
+        signal: AbortSignal.timeout(5000),
         headers: { "content-type": "application/json", ...(init?.headers ?? {}) },
       });
     } catch {
