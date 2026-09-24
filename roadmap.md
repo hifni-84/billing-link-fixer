@@ -4,3 +4,4 @@
 - [x] Pastikan daftar ONU dan portal WiFi membaca sumber GenieACS yang sama, serta pencarian menemukan username PPPoE pada semua koneksi.
 - [x] Tentukan langkah aman untuk memeriksa apakah modem Hadi sudah mendaftar ke GenieACS produksi.
 - [ ] Verifikasi keberadaan modem Hadi berdasarkan nomor seri di GenieACS produksi; menunggu nomor seri atau hasil pencarian dari server pelanggan.
+- [x] Tampilkan kegagalan sambungan NBI dari foto dengan jelas dan coba alamat lokal sebelum alamat LAN.

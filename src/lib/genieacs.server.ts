@@ -62,27 +62,40 @@ export type AcsDeviceDetail = AcsDevice & {
 
 export type AcsParamWrite = { path: string; value: string; type?: string };
 
-/** Semua modem memakai server GenieACS di 192.168.23.5 (NBI port 7557). */
+/** Alamat yang dipakai modem; NBI bisa hanya mendengarkan di loopback server. */
 export const ACS_HOST = "192.168.23.5";
 export const ACS_NBI_URL = `http://${ACS_HOST}:7557`;
 export const ACS_CWMP_URL = `http://${ACS_HOST}:7547`;
 export const ACS_UI_URL = `http://${ACS_HOST}:3001`;
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function base(_ignored?: string) {
-  return ACS_NBI_URL;
+/** Billing di server yang sama memakai loopback; alamat LAN hanya cadangan.
+ * URL lama dari pengaturan diabaikan agar tidak mengarah ke server lain. */
+async function fetchNbi(_ignored: string | undefined, path: string, init?: RequestInit) {
+  const endpoints = ["http://127.0.0.1:7557", ACS_NBI_URL];
+  for (const endpoint of endpoints) {
+    try {
+      return await fetch(`${endpoint}${path}`, {
+        ...init,
+        signal: AbortSignal.timeout(5000),
+        headers: { "content-type": "application/json", ...(init?.headers ?? {}) },
+      });
+    } catch {
+      // Hanya kegagalan jaringan yang mencoba alamat berikutnya. Error HTTP
+      // dari GenieACS diteruskan agar tidak tersamarkan oleh server lain.
+    }
+  }
+  throw new Error(
+    "Server billing tidak dapat menjangkau GenieACS di 127.0.0.1:7557 maupun 192.168.23.5:7557. " +
+      "Periksa apakah layanan genieacs-nbi aktif dan port 7557 dapat diakses dari server billing.",
+  );
 }
 
 async function nbi(nbiUrl: string | undefined, path: string, init?: RequestInit) {
-  const url = `${base(nbiUrl)}${path}`;
-  const res = await fetch(url, {
-    ...init,
-    headers: { "content-type": "application/json", ...(init?.headers ?? {}) },
-  });
+  const res = await fetchNbi(nbiUrl, path, init);
   const text = await res.text();
   if (!res.ok) {
     throw new Error(
-      `GenieACS NBI ${res.status}: ${text.slice(0, 200) || "tidak ada pesan"} (${url})`,
+      `GenieACS NBI ${res.status}: ${text.slice(0, 200) || "tidak ada pesan"}`,
     );
   }
   return text ? (JSON.parse(text) as unknown) : null;
@@ -481,10 +494,8 @@ export async function acsAction(
 
 /** Kirim tugas dan tunggu modem mengeksekusinya (bukan sekadar antre). */
 async function runTaskNow(id: string, body: Record<string, unknown>) {
-  const url = `${ACS_NBI_URL}/devices/${encodeURIComponent(id)}/tasks?timeout=20000&connection_request`;
-  const res = await fetch(url, {
+  const res = await fetchNbi(undefined, `/devices/${encodeURIComponent(id)}/tasks?timeout=20000&connection_request`, {
     method: "POST",
-    headers: { "content-type": "application/json" },
     body: JSON.stringify(body),
   });
   const text = await res.text();
