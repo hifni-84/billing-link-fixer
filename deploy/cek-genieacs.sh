@@ -27,7 +27,6 @@ done
 echo; echo '== Data modem di NBI (nomor seri, tanggal laporan, cocok dengan pencarian) =='
 python3 - "$TARGET" <<'PY'
 import collections
-import datetime
 import json
 import sys
 import urllib.error
@@ -38,8 +37,8 @@ target = sys.argv[1].strip().lower()
 fields = [
     '_id', '_lastInform', '_tags',
     'InternetGatewayDevice.DeviceInfo.SerialNumber',
-    'InternetGatewayDevice.WANDevice',
-    'Device.DeviceInfo.SerialNumber', 'Device.PPP',
+    'InternetGatewayDevice.WANDevice', 'InternetGatewayDevice.X_HW_WANDevice',
+    'Device.DeviceInfo.SerialNumber', 'Device.PPP', 'Device.IP',
 ]
 url = 'http://127.0.0.1:7557/devices/?' + urllib.parse.urlencode({'projection': ','.join(fields)})
 try:
