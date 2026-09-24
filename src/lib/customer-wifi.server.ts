@@ -56,9 +56,13 @@ async function findDevice(username: string) {
   const nbiUrl = settings["genieacs.nbiUrl"] || undefined;
   const devices = await acsListDevices(nbiUrl);
   const u = username.trim().toLowerCase();
-  const target = devices.find((d) =>
+  const matches = devices.filter((d) =>
     [d.ppp, ...(d.pppNames ?? [])].some((n) => (n || "").trim().toLowerCase() === u),
   );
+  if (matches.length > 1) {
+    throw new Error("Beberapa modem tertaut ke akun ini. Minta admin periksa User PPPoE dan tag modem di GenieACS.");
+  }
+  const target = matches[0];
   if (!target) {
     throw new Error(
       devices.length

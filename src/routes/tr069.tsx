@@ -60,6 +60,22 @@ function Tr069Page() {
     );
   }, [devices.data, q]);
 
+  const laporanSerentak = useMemo(() => {
+    if (!devices.data?.ok) return null;
+    const all = devices.data.devices;
+    if (all.length < 5) return null;
+    const byDay = new Map<string, number>();
+    for (const d of all) {
+      if (!d.lastInform || Date.now() - new Date(d.lastInform).getTime() < 24 * 60 * 60 * 1000) continue;
+      const day = d.lastInform.slice(0, 10);
+      byDay.set(day, (byDay.get(day) ?? 0) + 1);
+    }
+    const mostAffected = [...byDay.entries()].sort((a, b) => b[1] - a[1])[0];
+    if (!mostAffected) return null;
+    const [day, count] = mostAffected;
+    return count >= 5 && count >= all.length / 2 ? { day, count, total: all.length } : null;
+  }, [devices.data]);
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -82,6 +98,13 @@ function Tr069Page() {
       {devices.data && !devices.data.ok && (
         <div className="rounded-md border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">
           {devices.data.error}
+        </div>
+      )}
+
+      {laporanSerentak && (
+        <div className="rounded-md border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive" role="alert">
+          {laporanSerentak.count} dari {laporanSerentak.total} modem terakhir melapor ke GenieACS pada {new Date(`${laporanSerentak.day}T00:00:00Z`).toLocaleDateString("id-ID", { timeZone: "UTC", day: "numeric", month: "long", year: "numeric" })}.{" "}
+          Periksa layanan GenieACS dan akses modem ke port 7547 pada server. Ini tidak berarti internet pelanggan terputus.
         </div>
       )}
 
@@ -119,7 +142,7 @@ function Tr069Page() {
                 <td className="p-3">
                   <span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs ${d.online ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"}`}>
                     <span className={`h-1.5 w-1.5 rounded-full ${d.online ? "bg-primary" : "bg-muted-foreground"}`} />
-                    {d.online ? "Online" : "Terlambat lapor"}
+                    {d.online ? "Lapor sesuai jadwal" : "Terlambat lapor"}
                   </span>
                 </td>
                 <td className="p-3 font-mono">{d.serial}</td>

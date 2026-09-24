@@ -345,6 +345,8 @@ export async function acsListDevices(nbiUrl?: string): Promise<AcsDevice[]> {
     "InternetGatewayDevice.DeviceInfo.ProductClass",
     "InternetGatewayDevice.DeviceInfo.SoftwareVersion",
     "InternetGatewayDevice.WANDevice",
+    "InternetGatewayDevice.X_HW_WANDevice",
+    "InternetGatewayDevice.X_ZTE-COM_WANDevice",
     "Device.DeviceInfo.SerialNumber",
     "Device.DeviceInfo.Manufacturer",
     "Device.DeviceInfo.ModelName",
