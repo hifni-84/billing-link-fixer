@@ -40,7 +40,6 @@ function WifiPortalPage() {
   const [ssid, setSsid] = useState("");
   const [wifiPassword, setWifiPassword] = useState("");
   const [lihatWifi, setLihatWifi] = useState(false);
-  const [pilih, setPilih] = useState<string[]>([]);
 
   const masuk = useMutation({
     mutationFn: () =>
@@ -51,7 +50,6 @@ function WifiPortalPage() {
 
   useEffect(() => {
     if (!info) return;
-    setPilih(info.bands.map((b) => b.index));
     const utama = info.bands[0];
     setSsid((utama?.ssid ?? "").replace(/-5G$/i, ""));
   }, [info]);
@@ -62,7 +60,7 @@ function WifiPortalPage() {
         data: {
           username: username.trim(),
           password,
-          indexes: pilih,
+          indexes: [],
           ssid: ssid.trim(),
           wifiPassword,
         },
@@ -75,11 +73,7 @@ function WifiPortalPage() {
     setPassword("");
     setSsid("");
     setWifiPassword("");
-    setPilih([]);
   };
-
-  const toggleBand = (index: string) =>
-    setPilih((s) => (s.includes(index) ? s.filter((v) => v !== index) : [...s, index]));
 
   return (
     <div className="mx-auto w-full max-w-lg px-4 py-10">
@@ -226,28 +220,9 @@ function WifiPortalPage() {
               </p>
             </div>
 
-            {info.bands.length > 1 && (
-              <div className="flex flex-col gap-2">
-                <Label>Jaringan yang diubah</Label>
-                {info.bands.map((b) => (
-                  <label key={b.index} className="flex items-center gap-2 text-sm">
-                    <input
-                      type="checkbox"
-                      className="size-4 accent-current"
-                      checked={pilih.includes(b.index)}
-                      onChange={() => toggleBand(b.index)}
-                    />
-                    <span>
-                      {b.band} — <span className="text-muted-foreground">{b.ssid || "tanpa nama"}</span>
-                    </span>
-                  </label>
-                ))}
-              </div>
-            )}
-
             <Button
               type="submit"
-              disabled={simpan.isPending || (!ssid.trim() && !wifiPassword) || !pilih.length}
+              disabled={simpan.isPending || (!ssid.trim() && !wifiPassword)}
             >
               {simpan.isPending ? (
                 <Loader2 className="mr-2 size-4 animate-spin" />
