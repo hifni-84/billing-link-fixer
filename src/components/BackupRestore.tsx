@@ -12,7 +12,6 @@ const LOCAL_KEYS = [
   "mikrotik.prices",
   "billing.hybrid",
   "billing.options",
-  "genieacs.panel",
   "najwa_voucher_templates",
 ];
 

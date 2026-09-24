@@ -62,10 +62,15 @@ export type AcsDeviceDetail = AcsDevice & {
 
 export type AcsParamWrite = { path: string; value: string; type?: string };
 
-function base(nbiUrl?: string) {
-  const raw = ((nbiUrl && nbiUrl.trim()) || process.env["GENIEACS_NBI_URL"] || "http://127.0.0.1:7557").trim();
-  const withProto = /^https?:\/\//i.test(raw) ? raw : `http://${raw}`;
-  return withProto.replace(/\/+$/, "");
+/** Semua modem memakai server GenieACS di 192.168.23.5 (NBI port 7557). */
+export const ACS_HOST = "192.168.23.5";
+export const ACS_NBI_URL = `http://${ACS_HOST}:7557`;
+export const ACS_CWMP_URL = `http://${ACS_HOST}:7547`;
+export const ACS_UI_URL = `http://${ACS_HOST}:3001`;
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function base(_ignored?: string) {
+  return ACS_NBI_URL;
 }
 
 async function nbi(nbiUrl: string | undefined, path: string, init?: RequestInit) {
@@ -472,4 +477,88 @@ export async function acsAction(
       : { name: action === "reboot" ? "reboot" : "factoryReset" };
   await nbi(nbiUrl, taskUrl(id, true), { method: "POST", body: JSON.stringify(body) });
   return { ok: true as const };
+}
+
+/** Kirim tugas dan tunggu modem mengeksekusinya (bukan sekadar antre). */
+async function runTaskNow(id: string, body: Record<string, unknown>) {
+  const url = `${ACS_NBI_URL}/devices/${encodeURIComponent(id)}/tasks?timeout=20000&connection_request`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const text = await res.text();
+  if (res.status === 202) {
+    throw new Error(
+      "Modem tidak merespons sekarang (offline/terlambat lapor). Tugas diantrekan dan dijalankan saat modem lapor berikutnya.",
+    );
+  }
+  if (!res.ok) throw new Error(`GenieACS ${res.status}: ${text.slice(0, 200)}`);
+}
+
+function instancesOf(params: Record<string, string>, root: string) {
+  const esc = root.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const re = new RegExp(`^${esc}\\.(\\d+)\\.`);
+  const out = new Set<number>();
+  for (const k of Object.keys(params)) {
+    const m = re.exec(k);
+    if (m) out.add(Number(m[1]));
+  }
+  return out;
+}
+
+async function addInstance(id: string, root: string) {
+  const before = instancesOf((await acsGetDevice(id)).params, root);
+  await runTaskNow(id, { name: "addObject", objectName: root });
+  await runTaskNow(id, { name: "refreshObject", objectName: root });
+  const after = instancesOf((await acsGetDevice(id)).params, root);
+  const baru = [...after].filter((n) => !before.has(n)).sort((a, b) => b - a)[0];
+  if (baru === undefined) throw new Error(`Modem tidak membuat objek baru di ${root}.`);
+  return `${root}.${baru}`;
+}
+
+export type AcsNewWan = {
+  mode: "pppoe" | "bridge";
+  username?: string;
+  password?: string;
+  vlan?: string;
+};
+
+/** Tambah WAN baru (PPPoE routed atau Bridge) pada modem TR-098. */
+export async function acsAddWan(id: string, input: AcsNewWan) {
+  const detail = await acsGetDevice(id);
+  if (!Object.keys(detail.params).some((k) => k.startsWith("InternetGatewayDevice."))) {
+    throw new Error("Tambah WAN otomatis baru mendukung modem model TR-098 (InternetGatewayDevice).");
+  }
+  if (input.mode === "pppoe" && !input.username?.trim()) {
+    throw new Error("Username PPPoE wajib diisi.");
+  }
+  const wcd = await addInstance(id, "InternetGatewayDevice.WANDevice.1.WANConnectionDevice");
+  const conn = await addInstance(
+    id,
+    `${wcd}.${input.mode === "pppoe" ? "WANPPPConnection" : "WANIPConnection"}`,
+  );
+  const params = (await acsGetDevice(id)).params;
+  const writes: AcsParamWrite[] = [];
+  const has = (p: string) => p in params;
+  if (input.mode === "pppoe") {
+    writes.push({ path: `${conn}.ConnectionType`, value: "IP_Routed" });
+    writes.push({ path: `${conn}.Username`, value: input.username!.trim() });
+    writes.push({ path: `${conn}.Password`, value: input.password ?? "" });
+    if (has(`${conn}.NATEnabled`)) writes.push({ path: `${conn}.NATEnabled`, value: "true", type: "xsd:boolean" });
+  } else {
+    writes.push({ path: `${conn}.ConnectionType`, value: "IP_Bridged" });
+  }
+  const vlan = input.vlan?.trim();
+  if (vlan) {
+    const vlanPath = Object.keys(params).find(
+      (k) =>
+        (k.startsWith(`${conn}.`) || k.startsWith(`${wcd}.`)) &&
+        /(VLANID|VLANIDMark|_VLAN|VlanId)$/i.test(k),
+    );
+    if (vlanPath) writes.push({ path: vlanPath, value: vlan, type: "xsd:unsignedInt" });
+  }
+  writes.push({ path: `${conn}.Enable`, value: "true", type: "xsd:boolean" });
+  await acsSetParams(id, writes.map((w) => ({ ...w, type: w.type ?? "xsd:string" })));
+  return { path: conn, vlanSet: !vlan || writes.some((w) => /VLAN/i.test(w.path)) };
 }
