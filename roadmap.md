@@ -3,7 +3,7 @@
 - [x] Verifikasi tampilan publik dan pesan backend; login nyata dan keterkaitan modem akun pelanggan masih memerlukan pemeriksaan data server produksi.
 - [x] Pastikan daftar ONU dan portal WiFi membaca sumber GenieACS yang sama, serta pencarian menemukan username PPPoE pada semua koneksi.
 - [x] Tentukan langkah aman untuk memeriksa apakah modem Hadi sudah mendaftar ke GenieACS produksi.
-- [ ] Verifikasi keberadaan modem Hadi berdasarkan nomor seri di GenieACS produksi; menunggu nomor seri atau hasil pencarian dari server pelanggan.
+- [ ] Verifikasi keberadaan modem Hadi di GenieACS produksi; pengguna mengirim kode yang mirip nama akses TR-069, masih menunggu hasil cek baca-saja dari server.
 - [x] Tampilkan kegagalan sambungan NBI dari foto dengan jelas dan coba alamat lokal sebelum alamat LAN.
 - [x] Bedakan modem yang berhenti melapor TR-069 dari internet pelanggan yang putus, dan tampilkan peringatan jika banyak modem terhenti bersamaan.
 - [x] Sediakan pemeriksaan aman di server produksi untuk jalur ACS dan pencarian modem Hadi tanpa menampilkan sandi.

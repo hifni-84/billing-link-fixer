@@ -24,7 +24,7 @@ for url in "http://127.0.0.1:7547" "http://${HOST}:7547" "http://127.0.0.1:7557/
   curl --noproxy '*' -sS --connect-timeout 2 --max-time 5 -o /dev/null -w 'HTTP %{http_code}\n' "$url" 2>&1 || true
 done
 
-echo; echo '== Data modem di NBI (nomor seri, tanggal laporan, cocok dengan pencarian) =='
+echo; echo '== Data modem di NBI (nomor seri, user PPPoE, atau nama akses TR-069; tanpa sandi) =='
 python3 - "$TARGET" <<'PY'
 import collections
 import json
@@ -39,7 +39,9 @@ fields = [
     'InternetGatewayDevice.DeviceInfo.SerialNumber',
     'InternetGatewayDevice.WANDevice', 'InternetGatewayDevice.X_HW_WANDevice',
     'InternetGatewayDevice.X_ZTE-COM_WANDevice',
-    'Device.DeviceInfo.SerialNumber', 'Device.PPP', 'Device.IP',
+    'InternetGatewayDevice.ManagementServer.ConnectionRequestUsername',
+    'Device.DeviceInfo.SerialNumber', 'Device.ManagementServer.ConnectionRequestUsername',
+    'Device.PPP', 'Device.IP',
 ]
 url = 'http://127.0.0.1:7557/devices/?' + urllib.parse.urlencode({'projection': ','.join(fields)})
 try:
@@ -69,7 +71,9 @@ for doc in devices:
     serials = [val for path, val in leaves(doc) if path.endswith('DeviceInfo.SerialNumber')]
     names = [val for path, val in leaves(doc) if path.endswith('.Username') and ('WANPPPConnection.' in path or 'PPP.Interface.' in path)]
     tags = [str(v) for v in doc.get('_tags', [])]
-    searchable = serials + names + tags + [str(doc.get('_id', ''))]
+    # Nama akses TR-069 hanya untuk pencarian, tidak pernah dicetak bersama hasil.
+    request_users = [val for path, val in leaves(doc) if path.endswith('ManagementServer.ConnectionRequestUsername')]
+    searchable = serials + names + tags + request_users + [str(doc.get('_id', ''))]
     if target and any(target in value.lower() for value in searchable):
         matches.append((serials[0] if serials else str(doc.get('_id', '')), when or '-', names))
 
@@ -77,11 +81,11 @@ print('Total modem:', len(devices))
 print('Tanggal laporan terbanyak (UTC):')
 for day, count in dates.most_common(5):
     print(' ', day, ':', count, 'modem')
-print('Pencarian:', target, '→', len(matches), 'modem')
+print('Jumlah modem yang cocok:', len(matches))
 for serial, when, names in matches[:20]:
     print('  Seri:', serial, '| Lapor:', when, '| User PPPoE:', ', '.join(names) or '-')
 if not matches:
-    print('Tidak ada kecocokan: cari dengan nomor seri modem, bukan nama pelanggan saja.')
+    print('Tidak ada kecocokan: cari dengan nomor seri yang tertera di bodi modem; jika belum ada, periksa jalur modem ke ACS.')
 PY
 
 echo; echo 'Log rinci (jangan kirim sebelum memeriksa apakah ada data rahasia): journalctl -u genieacs-cwmp -n 30'
