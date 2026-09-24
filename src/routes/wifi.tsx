@@ -40,7 +40,6 @@ function WifiPortalPage() {
   const [ssid, setSsid] = useState("");
   const [wifiPassword, setWifiPassword] = useState("");
   const [lihatWifi, setLihatWifi] = useState(false);
-  const [pilih, setPilih] = useState<string[]>([]);
 
   const masuk = useMutation({
     mutationFn: () =>
@@ -51,7 +50,6 @@ function WifiPortalPage() {
 
   useEffect(() => {
     if (!info) return;
-    setPilih(info.bands.map((b) => b.index));
     const utama = info.bands[0];
     setSsid((utama?.ssid ?? "").replace(/-5G$/i, ""));
   }, [info]);
@@ -62,7 +60,7 @@ function WifiPortalPage() {
         data: {
           username: username.trim(),
           password,
-          indexes: pilih,
+          indexes: [],
           ssid: ssid.trim(),
           wifiPassword,
         },
@@ -75,11 +73,7 @@ function WifiPortalPage() {
     setPassword("");
     setSsid("");
     setWifiPassword("");
-    setPilih([]);
   };
-
-  const toggleBand = (index: string) =>
-    setPilih((s) => (s.includes(index) ? s.filter((v) => v !== index) : [...s, index]));
 
   return (
     <div className="mx-auto w-full max-w-lg px-4 py-10">
