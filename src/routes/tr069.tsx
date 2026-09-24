@@ -222,10 +222,10 @@ function DevicePanel({ id, onClose }: { id: string; onClose: () => void }) {
                         const writes: { path: string; value: string; type: string }[] = [];
                         if (e.ssid !== undefined && e.ssid.trim() && e.ssid !== w.ssid) writes.push({ path: w.ssidPath, value: e.ssid.trim(), type: "xsd:string" });
                         if (w.keyPath && e.key !== undefined && e.key !== w.key) {
-                          if (e.key.length < 8) return toast.error("Sandi minimal 8 karakter");
+                          if (e.key.length < 8) { toast.error("Sandi minimal 8 karakter"); return; }
                           writes.push({ path: w.keyPath, value: e.key, type: "xsd:string" });
                         }
-                        if (!writes.length) return toast.info("Tidak ada perubahan");
+                        if (!writes.length) { toast.info("Tidak ada perubahan"); return; }
                         run(`wifi-${w.index}`, () => setParams({ data: { id, writes } }), "WiFi disimpan ke modem");
                       }}
                     >
@@ -297,7 +297,7 @@ function DevicePanel({ id, onClose }: { id: string; onClose: () => void }) {
                     setBusy("addwan");
                     try {
                       const r = await addWan({ data: { id, ...wan } });
-                      if (!r.ok) return toast.error(r.error ?? "Gagal");
+                      if (!r.ok) { toast.error(r.error ?? "Gagal"); return; }
                       toast.success(r.vlanSet ? "WAN baru ditambahkan" : "WAN ditambahkan, tetapi VLAN tidak dikenali modem — atur VLAN di modem");
                       setWan({ mode: wan.mode, username: "", password: "", vlan: "" });
                       reload();
