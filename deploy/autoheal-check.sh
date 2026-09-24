@@ -54,9 +54,29 @@ for svc in mikrotik-billing nginx; do
   fi
 done
 
+# TR-069 berjalan di layanan terpisah dari billing/RADIUS. Setelah listrik padam,
+# NBI bisa tetap menyajikan daftar lama sementara CWMP berhenti menerima Inform.
+# Hanya start layanan yang benar-benar terpasang dan tidak aktif; jangan restart
+# layanan yang aktif karena sedang melayani modem pelanggan.
+for svc in mongod mongodb acs-alias-ip genieacs-cwmp genieacs-nbi genieacs-fs genieacs-ui; do
+  if systemctl list-unit-files "${svc}.service" 2>/dev/null | grep -q "^${svc}.service" && \
+      ! systemctl is-active --quiet "$svc"; then
+    echo "$svc mati; mencoba start untuk pemulihan TR-069."
+    systemctl start "$svc" >/dev/null 2>&1 || echo "$svc gagal start; periksa: journalctl -u $svc"
+  fi
+done
+if systemctl is-active --quiet genieacs-cwmp && \
+   ! ss -ltn 2>/dev/null | grep -qE ':7547[[:space:]]'; then
+  echo "PERINGATAN: genieacs-cwmp aktif tetapi port 7547 tidak listen; periksa konfigurasi port CWMP."
+fi
+if systemctl is-active --quiet genieacs-nbi && \
+   ! ss -ltn 2>/dev/null | grep -qE ':7557[[:space:]]'; then
+  echo "PERINGATAN: genieacs-nbi aktif tetapi port 7557 tidak listen; periksa konfigurasi NBI."
+fi
+
 if [ "$NEED_RECOVERY" -eq 1 ]; then
   echo "Masalah RADIUS terdeteksi; menjalankan pemulihan penuh."
   exec /bin/bash "$APP_DIR/deploy/fix-setelah-mati-lampu.sh"
 fi
 
-echo "Semua layanan sehat; tidak ada restart."
+echo "Pemeriksaan selesai; layanan yang aktif tidak di-restart."
