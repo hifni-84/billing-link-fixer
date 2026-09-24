@@ -80,7 +80,7 @@ function OnuPage() {
   const devices = useQuery({
     queryKey: ["acs-devices", nbiUrl],
     queryFn: () => acsDevicesGet({ data: { nbiUrl } }),
-    enabled: ready && savedSettings.data?.ok === true,
+    enabled: ready && !savedSettings.isLoading,
     refetchInterval: 60_000,
   });
 
@@ -135,6 +135,7 @@ function OnuPage() {
         <p className="text-xs text-muted-foreground">
           Kosongkan untuk memakai default <code>http://127.0.0.1:7557</code> (GenieACS di server
           yang sama). Data diambil langsung dari GenieACS, jadi tidak ada masalah mixed content.
+          {nbiUrl && <> Alamat tersimpan: <code>{nbiUrl}</code>.</>}
         </p>
       </div>
 
