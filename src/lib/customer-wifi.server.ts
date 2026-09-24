@@ -53,8 +53,9 @@ async function verifyCustomer(username: string, password: string) {
 /** Cari ONT pelanggan di GenieACS berdasarkan username PPPoE-nya. */
 async function findDevice(username: string) {
   const devices = await acsListDevices();
-  const target = devices.find(
-    (d) => (d.ppp || "").trim().toLowerCase() === username.trim().toLowerCase(),
+  const u = username.trim().toLowerCase();
+  const target = devices.find((d) =>
+    [d.ppp, ...(d.pppNames ?? [])].some((n) => (n || "").trim().toLowerCase() === u),
   );
   if (!target) {
     throw new Error(
