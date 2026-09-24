@@ -59,6 +59,12 @@ async function verifyCustomer(username: string, password: string) {
     ).catch(() => [] as { username: string }[]);
     if (rc[0]) row = { username: rc[0].username, plan: null, expires_at: null, disabled: 0 };
   }
+  // 3) akun PPP Secret langsung di MikroTik
+  if (!row) {
+    const { findPppSecret } = await import("./radius.server");
+    const s = await findPppSecret(u, password).catch(() => null);
+    if (s) row = { username: s.username, plan: s.plan, expires_at: null, disabled: s.disabled };
+  }
   if (!row) throw new Error("Username atau password PPPoE salah.");
   if (row.disabled) throw new Error("Akun Anda sedang tidak aktif. Hubungi admin.");
   return row;

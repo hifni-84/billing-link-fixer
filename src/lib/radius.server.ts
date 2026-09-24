@@ -761,6 +761,35 @@ async function cleanupExpiredOnRouters(usernames: string[]): Promise<RouterClean
   return result;
 }
 
+/** Cari akun PPPoE di menu PPP → Secrets pada semua MikroTik tersimpan. */
+export async function findPppSecret(username: string, password: string) {
+  const settings = await getSettings();
+  const routers = [
+    ...parseRouterCreds(settings["mikrotik.creds"]),
+    ...parseRouterCreds(settings["mikrotik.routers"]),
+  ];
+  const u = username.trim().toLowerCase();
+  for (const router of routers) {
+    try {
+      const res = await callRouterOs(router, "/ppp/secret", "GET");
+      if (!res.ok || !Array.isArray(res.data)) continue;
+      const row = (res.data as Array<Record<string, string>>).find(
+        (r) => (r.name ?? "").trim().toLowerCase() === u,
+      );
+      if (!row) continue;
+      if (row.password !== password) return null;
+      return {
+        username: row.name,
+        plan: row.profile ?? null,
+        disabled: row.disabled === "true" || row.disabled === "yes" ? 1 : 0,
+      };
+    } catch {
+      /* router tidak terjangkau, coba router berikutnya */
+    }
+  }
+  return null;
+}
+
 /**
  * Mencatat login pertama dari radacct, menghitung expired, dan menghapus
  * voucher yang sudah habis masa aktifnya.
