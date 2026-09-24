@@ -1,28 +1,32 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { ExternalLink, RefreshCw, Save } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { useMemo, useState } from "react";
+import { ExternalLink, Plus, Power, RefreshCw, Save, Search, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { PageHeader } from "@/components/Shared";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { readAcs, useAcs, writeAcs } from "@/lib/genieacs-store";
+import {
+  acsActionRun,
+  acsDeviceGet,
+  acsDevicesGet,
+  acsParamsSet,
+  acsWanAdd,
+  acsWanDelete,
+} from "@/lib/genieacs.functions";
+
+const HOST = "192.168.23.5";
 
 export const Route = createFileRoute("/tr069")({
   head: () => ({
     meta: [
-      { title: "TR-069 GenieACS — BILLING RADIUS" },
-      {
-        name: "description",
-        content:
-          "Buka panel GenieACS (TR-069) langsung dari Billing Radius untuk memantau dan mengatur ONU pelanggan.",
-      },
-      { property: "og:title", content: "TR-069 GenieACS — BILLING RADIUS" },
-      {
-        property: "og:description",
-        content: "Akses GenieACS TR-069 untuk manajemen ONU dari dalam panel Billing Radius.",
-      },
+      { title: "TR-069 Modem — BILLING RADIUS" },
+      { name: "description", content: "Daftar modem pelanggan, ganti WiFi, reboot, dan tambah WAN PPPoE/Bridge lewat GenieACS." },
+      { property: "og:title", content: "TR-069 Modem — BILLING RADIUS" },
+      { property: "og:description", content: "Kelola modem pelanggan lewat GenieACS 192.168.23.5." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -30,132 +34,284 @@ export const Route = createFileRoute("/tr069")({
   component: Tr069Page,
 });
 
+function fmtTime(iso: string) {
+  if (!iso) return "-";
+  const d = new Date(iso);
+  const m = Math.round((Date.now() - d.getTime()) / 60000);
+  const rel = m < 1 ? "baru saja" : m < 60 ? `${m} mnt lalu` : m < 1440 ? `${Math.round(m / 60)} jam lalu` : `${Math.round(m / 1440)} hari lalu`;
+  return `${d.toLocaleString("id-ID")} (${rel})`;
+}
+
 function Tr069Page() {
-  const { panel, configured } = useAcs();
-  const [url, setUrl] = useState("");
-  const [cwmpUrl, setCwmpUrl] = useState("");
-  const [frameKey, setFrameKey] = useState(0);
-  const [pageHttps, setPageHttps] = useState(false);
+  const list = useServerFn(acsDevicesGet);
+  const [q, setQ] = useState("");
+  const [selected, setSelected] = useState<string | null>(null);
+  const devices = useQuery({ queryKey: ["tr069-devices"], queryFn: () => list() });
 
-  useEffect(() => setUrl(panel.url), [panel.url]);
-  useEffect(() => setCwmpUrl(panel.cwmpUrl ?? ""), [panel.cwmpUrl]);
-  useEffect(() => {
-    setPageHttps(window.location.protocol === "https:");
-  }, []);
-
-  const mixedContent = pageHttps && /^http:\/\//i.test(panel.url);
-
-  const parsed = /^(?:https?:\/\/)?([0-9.]+)(?::(\d+))?/i.exec(cwmpUrl.trim());
-  const ipPort = { ip: parsed?.[1] || "192.168.23.5", port: parsed?.[2] || "7547" };
-
-
-  const simpan = () => {
-    writeAcs({ ...panel, url, cwmpUrl });
-    toast.success("Pengaturan GenieACS disimpan");
-    setFrameKey((k) => k + 1);
-  };
-
-
-  const buka = () => {
-    const target = readAcs().url;
-    if (!target) {
-      toast.error("Isi URL GenieACS dulu");
-      return;
-    }
-    window.open(target, "_blank", "noopener,noreferrer");
-  };
+  const rows = useMemo(() => {
+    const all = devices.data?.devices ?? [];
+    const s = q.trim().toLowerCase();
+    if (!s) return all;
+    return all.filter((d) =>
+      [d.serial, d.id, d.model, d.manufacturer, d.ip, ...d.pppNames, ...d.ssids]
+        .join(" ")
+        .toLowerCase()
+        .includes(s),
+    );
+  }, [devices.data, q]);
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="TR-069 GenieACS"
-        description="Panel GenieACS terpisah (repo alijayanet) untuk manajemen ONU pelanggan."
-      />
-
-      <div className="rounded-xl border bg-card p-4 space-y-3">
-        <div className="grid gap-3 sm:grid-cols-[1fr_auto_auto] sm:items-end">
-          <div className="space-y-1.5">
-            <Label htmlFor="acs-url">URL Web UI GenieACS</Label>
-            <Input
-              id="acs-url"
-              placeholder="http://192.168.23.251:3001"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-            />
-          </div>
-          <Button onClick={simpan} className="gap-2">
-            <Save className="h-4 w-4" /> Simpan
-          </Button>
-          <Button variant="outline" onClick={buka} className="gap-2">
-            <ExternalLink className="h-4 w-4" /> Buka tab baru
-          </Button>
-        </div>
-
-        <div className="space-y-1.5">
-          <Label htmlFor="acs-cwmp">URL ACS di ONT (CWMP)</Label>
-          <Input
-            id="acs-cwmp"
-            placeholder="http://192.168.23.5:7547"
-            value={cwmpUrl}
-            onChange={(e) => setCwmpUrl(e.target.value)}
-          />
-          <p className="text-xs text-muted-foreground">
-            Isi sesuai IP:port yang sudah tersetting di ONT. Agar server menjawab di IP
-            tersebut, jalankan sekali di server:{" "}
-            <code>sudo bash deploy/set-acs-ip.sh {ipPort.ip} {ipPort.port}</code>
-          </p>
-        </div>
-
-        <p className="text-xs text-muted-foreground">
-          Login default GenieACS: <b>admin / admin</b>. Pasang dengan{" "}
-          <code>sudo bash deploy/install-genieacs.sh</code> (UI otomatis di port 3001, CWMP 7547).
-        </p>
-      </div>
-
-
-      {configured && mixedContent ? (
-        <div className="rounded-xl border border-dashed p-6 text-sm space-y-3">
-          <p className="font-medium">Tampilan dalam panel diblokir browser (mixed content)</p>
-          <p className="text-muted-foreground">
-            Panel ini dibuka lewat <b>https</b>, sedangkan GenieACS di{" "}
-            <code>{panel.url}</code> masih <b>http</b>. Browser selalu menolak menampilkan
-            http di dalam halaman https, jadi harus dibuka di tab baru. Agar bisa tampil
-            langsung di panel, akses GenieACS lewat domain https (misal{" "}
-            <code>https://acs.domain-anda.com</code>) lalu isi URL itu di kolom di atas.
-          </p>
-          <Button onClick={buka} className="gap-2">
-            <ExternalLink className="h-4 w-4" /> Buka GenieACS di tab baru
-          </Button>
-        </div>
-      ) : configured ? (
-        <div className="rounded-xl border bg-card overflow-hidden">
-          <div className="flex items-center justify-between gap-2 border-b px-3 py-2">
-            <span className="truncate text-sm text-muted-foreground">{panel.url}</span>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="gap-2"
-              onClick={() => setFrameKey((k) => k + 1)}
-            >
-              <RefreshCw className="h-4 w-4" /> Muat ulang
+        title="TR-069 Modem"
+        description={`Server GenieACS: http://${HOST} · Alamat ACS di modem: http://${HOST}:7547`}
+        action={
+          <div className="flex gap-2">
+            <Button variant="outline" asChild>
+              <a href={`http://${HOST}:3001`} target="_blank" rel="noreferrer">
+                <ExternalLink className="mr-2 h-4 w-4" /> Buka GenieACS
+              </a>
+            </Button>
+            <Button onClick={() => devices.refetch()} disabled={devices.isFetching}>
+              <RefreshCw className={`mr-2 h-4 w-4 ${devices.isFetching ? "animate-spin" : ""}`} /> Muat ulang
             </Button>
           </div>
-          <iframe
-            key={frameKey}
-            src={panel.url}
-            title="GenieACS"
-            className="h-[70vh] w-full border-0 bg-background"
-          />
-          <div className="border-t px-3 py-2 text-xs text-muted-foreground">
-            Jika halaman kosong, GenieACS memblokir tampilan dalam frame — pakai tombol
-            &quot;Buka tab baru&quot;.
-          </div>
+        }
+      />
+
+      {devices.data && !devices.data.ok && (
+        <div className="rounded-md border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">
+          Tidak bisa terhubung ke GenieACS di http://{HOST}:7557 — {devices.data.error}
         </div>
-      ) : (
-        <div className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">
-          Belum ada URL GenieACS. Isi kolom di atas, misalnya{" "}
-          <code>http://IP-SERVER:3001</code>.
+      )}
+
+      <div className="relative max-w-md">
+        <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+        <Input className="pl-9" placeholder="Cari nomor seri, user PPPoE, SSID, IP…" value={q} onChange={(e) => setQ(e.target.value)} />
+      </div>
+
+      <div className="overflow-x-auto rounded-lg border bg-card">
+        <table className="w-full text-sm">
+          <thead className="bg-muted/50 text-left text-muted-foreground">
+            <tr>
+              <th className="p-3">Status</th>
+              <th className="p-3">Nomor Seri</th>
+              <th className="p-3">Model</th>
+              <th className="p-3">User PPPoE</th>
+              <th className="p-3">SSID</th>
+              <th className="p-3">IP</th>
+              <th className="p-3">Lapor terakhir</th>
+            </tr>
+          </thead>
+          <tbody>
+            {devices.isLoading && (
+              <tr><td colSpan={7} className="p-6 text-center text-muted-foreground">Memuat modem…</td></tr>
+            )}
+            {!devices.isLoading && rows.length === 0 && (
+              <tr><td colSpan={7} className="p-6 text-center text-muted-foreground">Belum ada modem yang terdaftar.</td></tr>
+            )}
+            {rows.map((d) => (
+              <tr
+                key={d.id}
+                onClick={() => setSelected(d.id)}
+                className={`cursor-pointer border-t hover:bg-muted/40 ${selected === d.id ? "bg-muted/60" : ""}`}
+              >
+                <td className="p-3">
+                  <span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs ${d.online ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"}`}>
+                    <span className={`h-1.5 w-1.5 rounded-full ${d.online ? "bg-primary" : "bg-muted-foreground"}`} />
+                    {d.online ? "Online" : "Terlambat lapor"}
+                  </span>
+                </td>
+                <td className="p-3 font-mono">{d.serial}</td>
+                <td className="p-3">{[d.manufacturer, d.model].filter(Boolean).join(" ")}</td>
+                <td className="p-3">{d.ppp || "-"}</td>
+                <td className="p-3">{d.ssids.join(", ") || "-"}</td>
+                <td className="p-3 font-mono">{d.ip || "-"}</td>
+                <td className="p-3 text-xs">{fmtTime(d.lastInform)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {selected && <DevicePanel id={selected} onClose={() => setSelected(null)} />}
+    </div>
+  );
+}
+
+function DevicePanel({ id, onClose }: { id: string; onClose: () => void }) {
+  const qc = useQueryClient();
+  const get = useServerFn(acsDeviceGet);
+  const setParams = useServerFn(acsParamsSet);
+  const action = useServerFn(acsActionRun);
+  const addWan = useServerFn(acsWanAdd);
+  const delWan = useServerFn(acsWanDelete);
+  const detail = useQuery({ queryKey: ["tr069-device", id], queryFn: () => get({ data: { id } }) });
+  const [busy, setBusy] = useState<string | null>(null);
+  const [wifiEdit, setWifiEdit] = useState<Record<string, { ssid?: string; key?: string }>>({});
+  const [wan, setWan] = useState({ mode: "pppoe" as "pppoe" | "bridge", username: "", password: "", vlan: "" });
+
+  const reload = () => {
+    qc.invalidateQueries({ queryKey: ["tr069-device", id] });
+    qc.invalidateQueries({ queryKey: ["tr069-devices"] });
+  };
+
+  async function run(label: string, fn: () => Promise<{ ok: boolean; error: string | null }>, okMsg: string) {
+    setBusy(label);
+    try {
+      const r = await fn();
+      if (r.ok) {
+        toast.success(okMsg);
+        reload();
+      } else toast.error(r.error ?? "Gagal");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  const d = detail.data?.device;
+
+  return (
+    <div className="space-y-5 rounded-lg border bg-card p-5">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="text-lg font-semibold">{d ? `${d.manufacturer} ${d.model}` : "Memuat modem…"}</h2>
+          {d && <p className="font-mono text-xs text-muted-foreground">{d.serial} · {d.ip || "tanpa IP"} · lapor {fmtTime(d.lastInform)}</p>}
         </div>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" disabled={!!busy} onClick={() => run("refresh", () => action({ data: { id, action: "refresh" } }), "Data modem diperbarui")}>
+            <RefreshCw className="mr-2 h-4 w-4" /> Ambil data
+          </Button>
+          <Button
+            variant="destructive"
+            size="sm"
+            disabled={!!busy}
+            onClick={() => confirm("Reboot modem ini? Internet pelanggan putus sebentar.") && run("reboot", () => action({ data: { id, action: "reboot" } }), "Perintah reboot dikirim")}
+          >
+            <Power className="mr-2 h-4 w-4" /> Reboot
+          </Button>
+          <Button variant="ghost" size="sm" onClick={onClose}><X className="h-4 w-4" /></Button>
+        </div>
+      </div>
+
+      {detail.data && !detail.data.ok && <p className="text-sm text-destructive">{detail.data.error}</p>}
+
+      {d && (
+        <>
+          <section className="space-y-3">
+            <h3 className="font-medium">WiFi</h3>
+            {d.wifi.length === 0 && <p className="text-sm text-muted-foreground">Data WiFi belum terbaca. Tekan "Ambil data".</p>}
+            <div className="grid gap-3 md:grid-cols-2">
+              {d.wifi.map((w) => {
+                const e = wifiEdit[w.index] ?? {};
+                return (
+                  <div key={w.ssidPath} className="space-y-2 rounded-md border p-3">
+                    <p className="text-xs text-muted-foreground">WLAN {w.index} · {w.band} · {w.clients.length} perangkat</p>
+                    <Label>Nama WiFi</Label>
+                    <Input value={e.ssid ?? w.ssid} onChange={(ev) => setWifiEdit({ ...wifiEdit, [w.index]: { ...e, ssid: ev.target.value } })} />
+                    {w.keyPath && (
+                      <>
+                        <Label>Sandi WiFi (min. 8 karakter)</Label>
+                        <Input value={e.key ?? w.key} onChange={(ev) => setWifiEdit({ ...wifiEdit, [w.index]: { ...e, key: ev.target.value } })} />
+                      </>
+                    )}
+                    <Button
+                      size="sm"
+                      disabled={!!busy}
+                      onClick={() => {
+                        const writes: { path: string; value: string; type: string }[] = [];
+                        if (e.ssid !== undefined && e.ssid.trim() && e.ssid !== w.ssid) writes.push({ path: w.ssidPath, value: e.ssid.trim(), type: "xsd:string" });
+                        if (w.keyPath && e.key !== undefined && e.key !== w.key) {
+                          if (e.key.length < 8) return toast.error("Sandi minimal 8 karakter");
+                          writes.push({ path: w.keyPath, value: e.key, type: "xsd:string" });
+                        }
+                        if (!writes.length) return toast.info("Tidak ada perubahan");
+                        run(`wifi-${w.index}`, () => setParams({ data: { id, writes } }), "WiFi disimpan ke modem");
+                      }}
+                    >
+                      <Save className="mr-2 h-4 w-4" /> Simpan
+                    </Button>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+
+          <section className="space-y-3">
+            <h3 className="font-medium">WAN</h3>
+            <div className="overflow-x-auto rounded-md border">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/50 text-left text-muted-foreground">
+                  <tr><th className="p-2">Jalur</th><th className="p-2">Jenis</th><th className="p-2">User</th><th className="p-2">VLAN</th><th className="p-2">Status</th><th className="p-2">IP</th><th className="p-2" /></tr>
+                </thead>
+                <tbody>
+                  {d.wan.length === 0 && <tr><td colSpan={7} className="p-3 text-center text-muted-foreground">Belum ada WAN terbaca.</td></tr>}
+                  {d.wan.map((w) => (
+                    <tr key={w.path} className="border-t">
+                      <td className="p-2 font-mono text-xs">{w.path.replace("InternetGatewayDevice.WANDevice.1.", "")}</td>
+                      <td className="p-2">{w.kind === "ppp" ? "PPPoE" : "IP / Bridge"}</td>
+                      <td className="p-2">{w.username || "-"}</td>
+                      <td className="p-2">{w.vlan || "-"}</td>
+                      <td className="p-2">{w.connectionStatus || "-"}</td>
+                      <td className="p-2 font-mono">{w.externalIp || "-"}</td>
+                      <td className="p-2 text-right">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          disabled={!!busy}
+                          onClick={() => confirm(`Hapus WAN ${w.path}?`) && run("delwan", () => delWan({ data: { id, path: w.path } }), "WAN dihapus")}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="grid gap-3 rounded-md border p-3 md:grid-cols-5">
+              <div className="space-y-1">
+                <Label>Jenis WAN</Label>
+                <select
+                  className="h-9 w-full rounded-md border bg-background px-2 text-sm"
+                  value={wan.mode}
+                  onChange={(e) => setWan({ ...wan, mode: e.target.value as "pppoe" | "bridge" })}
+                >
+                  <option value="pppoe">PPPoE (Route)</option>
+                  <option value="bridge">Bridge</option>
+                </select>
+              </div>
+              {wan.mode === "pppoe" && (
+                <>
+                  <div className="space-y-1"><Label>User PPPoE</Label><Input value={wan.username} onChange={(e) => setWan({ ...wan, username: e.target.value })} /></div>
+                  <div className="space-y-1"><Label>Sandi PPPoE</Label><Input value={wan.password} onChange={(e) => setWan({ ...wan, password: e.target.value })} /></div>
+                </>
+              )}
+              <div className="space-y-1"><Label>VLAN</Label><Input inputMode="numeric" placeholder="mis. 100" value={wan.vlan} onChange={(e) => setWan({ ...wan, vlan: e.target.value.replace(/\D/g, "") })} /></div>
+              <div className="flex items-end">
+                <Button
+                  className="w-full"
+                  disabled={!!busy}
+                  onClick={async () => {
+                    setBusy("addwan");
+                    try {
+                      const r = await addWan({ data: { id, ...wan } });
+                      if (!r.ok) return toast.error(r.error ?? "Gagal");
+                      toast.success(r.vlanSet ? "WAN baru ditambahkan" : "WAN ditambahkan, tetapi VLAN tidak dikenali modem — atur VLAN di modem");
+                      setWan({ mode: wan.mode, username: "", password: "", vlan: "" });
+                      reload();
+                    } finally {
+                      setBusy(null);
+                    }
+                  }}
+                >
+                  <Plus className="mr-2 h-4 w-4" /> {busy === "addwan" ? "Menambah…" : "Tambah WAN"}
+                </Button>
+              </div>
+            </div>
+          </section>
+        </>
       )}
     </div>
   );
