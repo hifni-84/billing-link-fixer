@@ -59,12 +59,19 @@ done
 # Hanya start layanan yang benar-benar terpasang dan tidak aktif; jangan restart
 # layanan yang aktif karena sedang melayani modem pelanggan.
 for svc in mongod mongodb acs-alias-ip genieacs-cwmp genieacs-nbi genieacs-fs genieacs-ui; do
+  if [ "$svc" = "acs-alias-ip" ] && ! systemctl list-unit-files 'genieacs-cwmp.service' 2>/dev/null | grep -q '^genieacs-cwmp.service'; then
+    continue
+  fi
   if systemctl list-unit-files "${svc}.service" 2>/dev/null | grep -q "^${svc}.service" && \
       ! systemctl is-active --quiet "$svc"; then
     echo "$svc mati; mencoba start untuk pemulihan TR-069."
     systemctl start "$svc" >/dev/null 2>&1 || echo "$svc gagal start; periksa: journalctl -u $svc"
   fi
 done
+if systemctl is-active --quiet genieacs-cwmp && command -v ip >/dev/null 2>&1 && \
+   ! ip -o -4 addr show 2>/dev/null | grep -q '192\.168\.23\.5/'; then
+  echo "PERINGATAN: IP ACS 192.168.23.5 tidak terpasang di server; periksa routing/alias sebelum mengubah konfigurasi."
+fi
 if systemctl is-active --quiet genieacs-cwmp && \
    ! ss -ltn 2>/dev/null | grep -qE ':7547[[:space:]]'; then
   echo "PERINGATAN: genieacs-cwmp aktif tetapi port 7547 tidak listen; periksa konfigurasi port CWMP."
