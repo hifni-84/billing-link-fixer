@@ -79,7 +79,7 @@ function OnuPage() {
   });
 
   const list = (devices.data?.devices ?? []).filter((d) => {
-    const t = `${d.serial} ${d.model} ${d.manufacturer} ${d.ppp} ${d.ip} ${d.id} ${(
+    const t = `${d.serial} ${d.model} ${d.manufacturer} ${d.ppp} ${(d.tags ?? []).join(" ")} ${d.ip} ${d.id} ${(
       d.ssids ?? []
     ).join(" ")}`.toLowerCase();
     return t.includes(q.trim().toLowerCase());
@@ -145,6 +145,10 @@ function OnuPage() {
         </Button>
       </div>
 
+      <p className="text-xs text-muted-foreground">
+        Jika User PPPoE kosong, akun pelanggan belum dapat dikenali oleh portal WiFi. Periksa username di WAN modem atau beri tag sesuai username internet pada modem di GenieACS. Status laporan modem tidak selalu sama dengan status internet pelanggan.
+      </p>
+
       {devices.data && !devices.data.ok ? (
         <div className="rounded-xl border border-dashed p-6 text-sm">
           <p className="font-medium">Gagal ambil data dari GenieACS</p>
@@ -203,7 +207,12 @@ function OnuPage() {
                       {d.clientCount ?? 0}
                     </span>
                   </td>
-                  <td className="px-3 py-2">{d.ppp || "-"}</td>
+                   <td className="px-3 py-2">
+                     {d.ppp || "-"}
+                     {(d.tags ?? []).length > 0 && (
+                       <span className="block text-xs text-muted-foreground">Tag: {d.tags.join(", ")}</span>
+                     )}
+                   </td>
                   <td className="px-3 py-2">{d.ip || "-"}</td>
                   <td className="px-3 py-2">
                     <span title={d.lastInform ? `Laporan terakhir: ${new Date(d.lastInform).toLocaleString("id-ID")}` : "Belum ada laporan dari modem"}>

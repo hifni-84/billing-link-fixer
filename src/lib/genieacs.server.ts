@@ -49,6 +49,7 @@ export type AcsDevice = {
   ppp: string;
   /** Semua username PPPoE + tag perangkat, untuk pencocokan pelanggan. */
   pppNames: string[];
+  tags: string[];
   ssids: string[];
   clientCount: number;
 };
@@ -279,6 +280,7 @@ function summarize(doc: Record<string, unknown>, params: Record<string, string>)
       ...pppNamesOf(params),
       ...((Array.isArray(doc["_tags"]) ? doc["_tags"] : []) as unknown[]).map(String),
     ],
+    tags: ((Array.isArray(doc["_tags"]) ? doc["_tags"] : []) as unknown[]).map(String),
     ssids: ssidsOf(params),
     clientCount: clientCountOf(params),
   };

@@ -85,7 +85,7 @@ export async function customerWifiInfo(
   password: string,
 ): Promise<CustomerWifiInfo> {
   const row = await verifyCustomer(username, password);
-  const detail = await findDevice(username);
+  const detail = await findDevice(row.username);
   return {
     username: row.username,
     plan: row.plan ?? "",
