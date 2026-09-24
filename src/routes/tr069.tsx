@@ -81,7 +81,7 @@ function Tr069Page() {
 
       {devices.data && !devices.data.ok && (
         <div className="rounded-md border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">
-          Tidak bisa terhubung ke GenieACS di http://{HOST}:7557 — {devices.data.error}
+          {devices.data.error}
         </div>
       )}
 
@@ -108,7 +108,7 @@ function Tr069Page() {
               <tr><td colSpan={7} className="p-6 text-center text-muted-foreground">Memuat modem…</td></tr>
             )}
             {!devices.isLoading && rows.length === 0 && (
-              <tr><td colSpan={7} className="p-6 text-center text-muted-foreground">Belum ada modem yang terdaftar.</td></tr>
+              <tr><td colSpan={7} className="p-6 text-center text-muted-foreground">{devices.data?.ok ? (q ? "Tidak ada modem yang cocok." : "Belum ada modem yang terdaftar.") : "Daftar modem belum dapat dimuat."}</td></tr>
             )}
             {rows.map((d) => (
               <tr
