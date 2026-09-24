@@ -37,14 +37,28 @@ type VoucherRow = {
 
 /** Verifikasi username + password PPPoE pelanggan di database billing. */
 async function verifyCustomer(username: string, password: string) {
+  const u = username.trim();
+  // 1) akun di tabel billing (PPPoE atau layanan lain dengan password sama)
   const rows = await query<VoucherRow>(
     `SELECT username, plan, expires_at, disabled
        FROM billing_voucher
-       WHERE LOWER(username) = LOWER(?) AND password = ? AND LOWER(service) = 'pppoe'
+       WHERE LOWER(username) = LOWER(?) AND password = ?
+       ORDER BY (LOWER(service) = 'pppoe') DESC
       LIMIT 1`,
-    [username.trim(), password],
-  );
-  const row = rows[0];
+    [u, password],
+  ).catch(() => [] as VoucherRow[]);
+  let row = rows[0];
+  // 2) akun RADIUS langsung (radcheck) yang tidak dibuat lewat menu voucher
+  if (!row) {
+    const rc = await query<{ username: string }>(
+      `SELECT username FROM radcheck
+         WHERE LOWER(username) = LOWER(?)
+           AND attribute IN ('Cleartext-Password','User-Password') AND value = ?
+        LIMIT 1`,
+      [u, password],
+    ).catch(() => [] as { username: string }[]);
+    if (rc[0]) row = { username: rc[0].username, plan: null, expires_at: null, disabled: 0 };
+  }
   if (!row) throw new Error("Username atau password PPPoE salah.");
   if (row.disabled) throw new Error("Akun Anda sedang tidak aktif. Hubungi admin.");
   return row;
