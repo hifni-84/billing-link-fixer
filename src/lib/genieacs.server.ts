@@ -47,6 +47,8 @@ export type AcsDevice = {
   online: boolean;
   ip: string;
   ppp: string;
+  /** Semua username PPPoE + tag perangkat, untuk pencocokan pelanggan. */
+  pppNames: string[];
   ssids: string[];
   clientCount: number;
 };
@@ -107,6 +109,17 @@ function paramsOf(doc: Record<string, unknown>) {
 function pick(params: Record<string, string>, re: RegExp) {
   for (const [k, v] of Object.entries(params)) if (re.test(k)) return { path: k, value: v };
   return null;
+}
+
+/** Semua username PPPoE yang terisi (TR-098 & TR-181, semua koneksi WAN). */
+function pppNamesOf(params: Record<string, string>) {
+  const out: string[] = [];
+  for (const [k, v] of Object.entries(params)) {
+    if (/(WANPPPConnection\.\d+|PPP\.Interface\.\d+)\.Username$/i.test(k) && v?.trim()) {
+      if (!out.includes(v.trim())) out.push(v.trim());
+    }
+  }
+  return out;
 }
 
 /** Kumpulkan nama SSID aktif (unik, tanpa yang kosong). */
@@ -255,7 +268,13 @@ function summarize(doc: Record<string, unknown>, params: Record<string, string>)
     lastInform,
     online,
     ip,
-    ppp: pick(params, /WANPPPConnection\.\d+\.Username$/)?.value || "",
+    ppp:
+      pppNamesOf(params)[0] ||
+      "",
+    pppNames: [
+      ...pppNamesOf(params),
+      ...((Array.isArray(doc["_tags"]) ? doc["_tags"] : []) as unknown[]).map(String),
+    ],
     ssids: ssidsOf(params),
     clientCount: clientCountOf(params),
   };
