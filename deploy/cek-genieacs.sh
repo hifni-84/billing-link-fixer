@@ -83,7 +83,5 @@ if not matches:
     print('Tidak ada kecocokan: cari dengan nomor seri modem, bukan nama pelanggan saja.')
 PY
 
-echo; echo '== Pesan layanan ACS terbaru =='
-journalctl -u genieacs-cwmp --since '1 hour ago' -n 30 --no-pager -o cat 2>/dev/null |
-  grep -iE 'error|warn|failed|timeout|refused|unreachable|listen|address|mongo' | tail -n 10 || true
+echo; echo 'Log rinci (jangan kirim sebelum memeriksa apakah ada data rahasia): journalctl -u genieacs-cwmp -n 30'
 echo 'Pemeriksaan selesai. Tidak ada pengaturan yang diubah.'

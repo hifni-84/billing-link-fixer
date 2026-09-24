@@ -5,5 +5,6 @@
 - [x] Tentukan langkah aman untuk memeriksa apakah modem Hadi sudah mendaftar ke GenieACS produksi.
 - [ ] Verifikasi keberadaan modem Hadi berdasarkan nomor seri di GenieACS produksi; menunggu nomor seri atau hasil pencarian dari server pelanggan.
 - [x] Tampilkan kegagalan sambungan NBI dari foto dengan jelas dan coba alamat lokal sebelum alamat LAN.
-- [ ] Bedakan modem yang berhenti melapor TR-069 dari internet pelanggan yang putus, dan tampilkan peringatan jika banyak modem terhenti bersamaan.
-- [ ] Sediakan pemeriksaan aman di server produksi untuk jalur ACS dan pencarian modem Hadi tanpa menampilkan sandi.
+- [x] Bedakan modem yang berhenti melapor TR-069 dari internet pelanggan yang putus, dan tampilkan peringatan jika banyak modem terhenti bersamaan.
+- [x] Sediakan pemeriksaan aman di server produksi untuk jalur ACS dan pencarian modem Hadi tanpa menampilkan sandi.
+- [ ] Periksa hasil pemeriksaan GenieACS di server produksi dan pulihkan jalur modem ke port 7547 jika masih terputus.
