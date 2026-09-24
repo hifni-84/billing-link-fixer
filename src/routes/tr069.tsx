@@ -103,7 +103,7 @@ function Tr069Page() {
 
       {laporanSerentak && (
         <div className="rounded-md border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive" role="alert">
-          {laporanSerentak.count} dari {laporanSerentak.total} modem terakhir melapor ke GenieACS pada {new Date(`${laporanSerentak.day}T00:00:00Z`).toLocaleDateString("id-ID", { timeZone: "UTC", day: "numeric", month: "long", year: "numeric" })}.
+          {laporanSerentak.count} dari {laporanSerentak.total} modem terakhir melapor ke GenieACS pada {new Date(`${laporanSerentak.day}T00:00:00Z`).toLocaleDateString("id-ID", { timeZone: "UTC", day: "numeric", month: "long", year: "numeric" })}.{" "}
           Periksa layanan GenieACS dan akses modem ke port 7547 pada server. Ini tidak berarti internet pelanggan terputus.
         </div>
       )}
