@@ -37,7 +37,7 @@ import {
   acsParamsSet,
 } from "@/lib/genieacs.functions";
 import { useAcs, writeAcs } from "@/lib/genieacs-store";
-import { settingsSave } from "@/lib/radius.functions";
+import { settingsGet, settingsSave } from "@/lib/radius.functions";
 
 export const Route = createFileRoute("/onu")({
   head: () => ({
@@ -69,17 +69,23 @@ function OnuPage() {
   const [q, setQ] = useState("");
   const [openId, setOpenId] = useState<string | null>(null);
 
-  const nbiUrl = panel.nbiUrl;
+  const savedSettings = useQuery({
+    queryKey: ["acs-settings"],
+    queryFn: () => settingsGet(),
+    enabled: ready,
+  });
+  // Daftar ONU dan portal pelanggan harus membaca alamat GenieACS yang sama.
+  const nbiUrl = savedSettings.data?.data?.["genieacs.nbiUrl"]?.trim() || "";
 
   const devices = useQuery({
     queryKey: ["acs-devices", nbiUrl],
     queryFn: () => acsDevicesGet({ data: { nbiUrl } }),
-    enabled: ready,
+    enabled: ready && savedSettings.data?.ok === true,
     refetchInterval: 60_000,
   });
 
   const list = (devices.data?.devices ?? []).filter((d) => {
-    const t = `${d.serial} ${d.model} ${d.manufacturer} ${d.ppp} ${(d.tags ?? []).join(" ")} ${d.ip} ${d.id} ${(
+    const t = `${d.serial} ${d.model} ${d.manufacturer} ${d.ppp} ${(d.pppNames ?? []).join(" ")} ${d.ip} ${d.id} ${(
       d.ssids ?? []
     ).join(" ")}`.toLowerCase();
     return t.includes(q.trim().toLowerCase());
@@ -87,14 +93,16 @@ function OnuPage() {
 
   const [savingNbi, setSavingNbi] = useState(false);
   const simpanNbi = async () => {
-    const url = (nbi || panel.nbiUrl).trim();
+    const url = (nbi || nbiUrl).trim();
     setSavingNbi(true);
     try {
       const result = await settingsSave({ data: { entries: { "genieacs.nbiUrl": url } } });
       if (!result.ok) throw new Error(result.error);
       writeAcs({ ...panel, nbiUrl: url });
+      setNbi("");
       toast.success("URL API GenieACS disimpan untuk portal pelanggan");
-      setTimeout(() => qc.invalidateQueries({ queryKey: ["acs-devices"] }), 100);
+      await qc.invalidateQueries({ queryKey: ["acs-settings"] });
+      await qc.invalidateQueries({ queryKey: ["acs-devices"] });
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Gagal menyimpan URL API GenieACS");
     } finally {
@@ -115,7 +123,7 @@ function OnuPage() {
             <Label htmlFor="nbi">URL API GenieACS (NBI)</Label>
             <Input
               id="nbi"
-              placeholder={panel.nbiUrl || "http://127.0.0.1:7557"}
+              placeholder={nbiUrl || "http://127.0.0.1:7557"}
               value={nbi}
               onChange={(e) => setNbi(e.target.value)}
             />
@@ -149,6 +157,10 @@ function OnuPage() {
         Jika User PPPoE kosong, portal WiFi hanya bisa mengenali modem bila ada tag yang sama persis dengan username internet pelanggan. Periksa username di WAN modem atau tag perangkat di GenieACS. Status laporan modem tidak sama dengan status internet pelanggan.
       </p>
 
+      {savedSettings.data && !savedSettings.data.ok ? (
+        <p className="text-sm text-destructive">Pengaturan GenieACS belum dapat dibaca: {savedSettings.data.error}</p>
+      ) : null}
+
       {devices.data && !devices.data.ok ? (
         <div className="rounded-xl border border-dashed p-6 text-sm">
           <p className="font-medium">Gagal ambil data dari GenieACS</p>
@@ -180,7 +192,9 @@ function OnuPage() {
             ) : list.length === 0 ? (
               <tr>
                 <td colSpan={8} className="px-3 py-8 text-center text-muted-foreground">
-                  Belum ada ONU terdaftar di GenieACS.
+                   {q.trim()
+                     ? `Tidak ada modem yang cocok dengan “${q.trim()}” dari ${devices.data?.devices.length ?? 0} modem. Coba cari berdasarkan nomor seri atau nama WiFi.`
+                     : "Belum ada ONU terdaftar di GenieACS."}
                 </td>
               </tr>
             ) : (
