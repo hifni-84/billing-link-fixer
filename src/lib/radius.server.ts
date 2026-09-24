@@ -774,14 +774,15 @@ export async function findPppSecret(username: string, password: string) {
       const res = await callRouterOs(router, "/ppp/secret", "GET");
       if (!res.ok || !Array.isArray(res.data)) continue;
       const row = (res.data as Array<Record<string, string>>).find(
-        (r) => (r.name ?? "").trim().toLowerCase() === u,
+        (r) => (r["name"] ?? "").trim().toLowerCase() === u,
       );
       if (!row) continue;
-      if (row.password !== password) return null;
+      if (row["password"] !== password) return null;
+      const dis = row["disabled"];
       return {
-        username: row.name,
-        plan: row.profile ?? null,
-        disabled: row.disabled === "true" || row.disabled === "yes" ? 1 : 0,
+        username: row["name"] ?? username,
+        plan: row["profile"] ?? null,
+        disabled: dis === "true" || dis === "yes" ? 1 : 0,
       };
     } catch {
       /* router tidak terjangkau, coba router berikutnya */
