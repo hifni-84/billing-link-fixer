@@ -169,10 +169,10 @@ function WifiPortalPage() {
                 {info.plan ? ` — paket ${info.plan}` : ""}
               </p>
               <p className="text-muted-foreground">Aktif hingga: {tanggal(info.expiresAt)}</p>
-              <p className={info.device.online ? "text-primary" : "text-destructive"}>
+              <p className={info.device.online ? "text-primary" : "text-muted-foreground"}>
                 {info.device.online
-                  ? "Modem online"
-                  : `Modem offline (terakhir: ${tanggal(info.device.lastInform)})`}
+                  ? "Modem baru melapor ke pengelola"
+                  : `Modem belum melapor lagi (terakhir: ${tanggal(info.device.lastInform)})`}
               </p>
             </div>
             <Button variant="ghost" size="sm" onClick={keluar}>
@@ -270,7 +270,7 @@ function WifiPortalPage() {
 
             {!info.device.online && (
               <p className="text-xs text-muted-foreground">
-                Modem sedang offline. Perubahan baru diterapkan setelah modem menyala kembali.
+                 Modem belum melapor lagi ke pengelola. Perubahan mungkin menunggu modem terhubung kembali.
               </p>
             )}
           </form>

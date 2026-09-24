@@ -247,8 +247,12 @@ function clientCountOf(params: Record<string, string>) {
 
 function summarize(doc: Record<string, unknown>, params: Record<string, string>): AcsDevice {
   const id = String(doc["_id"] ?? "");
-  const lastInformRaw = (doc["_lastInform"] ?? doc["_registered"]) as string | number | undefined;
-  const lastInform = lastInformRaw ? new Date(lastInformRaw).toISOString() : "";
+  // _registered is only the first registration, not evidence of a recent inform.
+  const lastInformRaw = doc["_lastInform"] as string | number | undefined;
+  const lastInformDate = lastInformRaw ? new Date(lastInformRaw) : null;
+  const lastInform = lastInformDate && !Number.isNaN(lastInformDate.getTime())
+    ? lastInformDate.toISOString()
+    : "";
   const online = lastInform ? Date.now() - new Date(lastInform).getTime() < 10 * 60 * 1000 : false;
   const ip =
     pick(params, /WANIPConnection\.\d+\.ExternalIPAddress$/)?.value ||

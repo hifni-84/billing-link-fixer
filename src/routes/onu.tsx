@@ -206,9 +206,16 @@ function OnuPage() {
                   <td className="px-3 py-2">{d.ppp || "-"}</td>
                   <td className="px-3 py-2">{d.ip || "-"}</td>
                   <td className="px-3 py-2">
-                    <Badge variant={d.online ? "default" : "secondary"}>
-                      {d.online ? "Online" : "Offline"}
-                    </Badge>
+                    <span title={d.lastInform ? `Laporan terakhir: ${new Date(d.lastInform).toLocaleString("id-ID")}` : "Belum ada laporan dari modem"}>
+                      <Badge variant={d.online ? "default" : "secondary"}>
+                        {d.online ? "Baru melapor" : "Belum melapor"}
+                      </Badge>
+                      {!d.online && d.lastInform && (
+                        <span className="ml-2 whitespace-nowrap text-xs text-muted-foreground">
+                          {new Date(d.lastInform).toLocaleString("id-ID", { dateStyle: "short", timeStyle: "short" })}
+                        </span>
+                      )}
+                    </span>
                   </td>
                   <td className="px-3 py-2 text-right">
                     <Button size="sm" variant="outline" onClick={() => setOpenId(d.id)}>
