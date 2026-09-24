@@ -1,0 +1,129 @@
+/**
+ * Portal WiFi pelanggan PPPoE: verifikasi akun lalu baca/ubah SSID & password
+ * WiFi pada ONT pelanggan melalui GenieACS (TR-069).
+ */
+
+import { query } from "./radius.server";
+import { acsGetDevice, acsListDevices, acsSetParams } from "./genieacs.server";
+
+export type CustomerWifiBand = {
+  index: string;
+  band: string;
+  ssid: string;
+  ssidPath: string;
+  keyPath: string | null;
+};
+
+export type CustomerWifiInfo = {
+  username: string;
+  plan: string;
+  expiresAt: string | null;
+  device: {
+    id: string;
+    model: string;
+    manufacturer: string;
+    online: boolean;
+    lastInform: string;
+  };
+  bands: CustomerWifiBand[];
+};
+
+type VoucherRow = {
+  username: string;
+  plan: string | null;
+  expires_at: string | null;
+  disabled: number | null;
+};
+
+/** Verifikasi username + password PPPoE pelanggan di database billing. */
+async function verifyCustomer(username: string, password: string) {
+  const rows = await query<VoucherRow>(
+    `SELECT username, plan, expires_at, disabled
+       FROM billing_voucher
+      WHERE username = ? AND password = ? AND service = 'pppoe'
+      LIMIT 1`,
+    [username, password],
+  );
+  const row = rows[0];
+  if (!row) throw new Error("Username atau password PPPoE salah.");
+  if (row.disabled) throw new Error("Akun Anda sedang tidak aktif. Hubungi admin.");
+  return row;
+}
+
+/** Cari ONT pelanggan di GenieACS berdasarkan username PPPoE-nya. */
+async function findDevice(username: string) {
+  const devices = await acsListDevices();
+  const target = devices.find(
+    (d) => (d.ppp || "").trim().toLowerCase() === username.trim().toLowerCase(),
+  );
+  if (!target) {
+    throw new Error(
+      "Modem Anda belum terhubung ke sistem pengelolaan jarak jauh. Hubungi admin.",
+    );
+  }
+  return acsGetDevice(target.id);
+}
+
+const bandsOf = (detail: Awaited<ReturnType<typeof acsGetDevice>>) =>
+  detail.wifi
+    .filter((w) => w.ssidPath)
+    .map<CustomerWifiBand>((w) => ({
+      index: w.index,
+      band: w.band || (Number(w.index) >= 5 ? "5 GHz" : "2.4 GHz"),
+      ssid: w.ssid,
+      ssidPath: w.ssidPath,
+      keyPath: w.keyPath,
+    }));
+
+export async function customerWifiInfo(
+  username: string,
+  password: string,
+): Promise<CustomerWifiInfo> {
+  const row = await verifyCustomer(username, password);
+  const detail = await findDevice(username);
+  return {
+    username: row.username,
+    plan: row.plan ?? "",
+    expiresAt: row.expires_at ?? null,
+    device: {
+      id: detail.id,
+      model: detail.model,
+      manufacturer: detail.manufacturer,
+      online: detail.online,
+      lastInform: detail.lastInform,
+    },
+    bands: bandsOf(detail),
+  };
+}
+
+export async function customerWifiUpdate(input: {
+  username: string;
+  password: string;
+  /** Index WiFi yang diubah; kosong = semua band. */
+  indexes: string[];
+  ssid: string;
+  wifiPassword: string;
+}) {
+  await verifyCustomer(input.username, input.password);
+  const detail = await findDevice(input.username);
+  const all = bandsOf(detail);
+  const pilih = input.indexes.length
+    ? all.filter((b) => input.indexes.includes(b.index))
+    : all;
+  if (!pilih.length) throw new Error("Jaringan WiFi tidak ditemukan pada modem Anda.");
+
+  const writes: { path: string; value: string; type?: string }[] = [];
+  for (const b of pilih) {
+    if (input.ssid) {
+      // Band 5 GHz diberi akhiran -5G agar tidak bentrok dengan 2.4 GHz.
+      const suffix = pilih.length > 1 && /5\s*g/i.test(b.band) ? "-5G" : "";
+      writes.push({ path: b.ssidPath, value: `${input.ssid}${suffix}`, type: "xsd:string" });
+    }
+    if (input.wifiPassword && b.keyPath) {
+      writes.push({ path: b.keyPath, value: input.wifiPassword, type: "xsd:string" });
+    }
+  }
+  if (!writes.length) throw new Error("Tidak ada perubahan untuk disimpan.");
+  await acsSetParams(detail.id, writes);
+  return { changed: pilih.map((b) => b.band) };
+}
