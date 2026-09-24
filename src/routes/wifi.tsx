@@ -171,8 +171,8 @@ function WifiPortalPage() {
               <p className="text-muted-foreground">Aktif hingga: {tanggal(info.expiresAt)}</p>
               <p className={info.device.online ? "text-primary" : "text-muted-foreground"}>
                 {info.device.online
-                  ? "Modem baru melapor ke pengelola"
-                  : `Modem belum melapor lagi (terakhir: ${tanggal(info.device.lastInform)})`}
+                   ? "Laporan modem sesuai jadwal"
+                   : `Laporan modem terlambat (terakhir: ${tanggal(info.device.lastInform)})`}
               </p>
             </div>
             <Button variant="ghost" size="sm" onClick={keluar}>
@@ -270,7 +270,7 @@ function WifiPortalPage() {
 
             {!info.device.online && (
               <p className="text-xs text-muted-foreground">
-                 Modem belum melapor lagi ke pengelola. Perubahan mungkin menunggu modem terhubung kembali.
+                  Laporan modem terlambat; ini belum tentu gangguan internet. Perubahan mungkin menunggu modem menghubungi pengelola kembali.
               </p>
             )}
           </form>
