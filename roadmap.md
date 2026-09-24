@@ -1,0 +1,3 @@
+- [ ] Perjelas status modem di menu ONU agar laporan GenieACS yang terlambat tidak disalahartikan sebagai putus internet.
+- [ ] Telusuri kegagalan masuk portal WiFi PPPoE dan perbaiki penyebab yang dapat dipastikan tanpa akses server produksi.
+- [ ] Verifikasi tampilan dan jelaskan pemeriksaan aman yang masih memerlukan data server produksi.
