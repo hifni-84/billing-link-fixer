@@ -7,7 +7,7 @@ TARGET="${1:-hadi}"
 HOST="192.168.23.5"
 
 echo '== Layanan GenieACS dan database =='
-for service in mongod mongodb genieacs-cwmp genieacs-nbi genieacs-fs genieacs-ui; do
+for service in mongod mongodb acs-alias-ip genieacs-cwmp genieacs-nbi genieacs-fs genieacs-ui; do
   if systemctl list-unit-files "$service.service" --no-legend 2>/dev/null | grep -q "$service.service"; then
     printf '%-19s %s\n' "$service" "$(systemctl is-active "$service" 2>/dev/null || true)"
   fi
