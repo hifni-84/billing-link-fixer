@@ -40,7 +40,7 @@ async function verifyCustomer(username: string, password: string) {
   const rows = await query<VoucherRow>(
     `SELECT username, plan, expires_at, disabled
        FROM billing_voucher
-      WHERE username = ? AND password = ? AND service = 'pppoe'
+       WHERE LOWER(username) = LOWER(?) AND password = ? AND LOWER(service) = 'pppoe'
       LIMIT 1`,
     [username.trim(), password],
   );
@@ -85,7 +85,7 @@ export async function customerWifiInfo(
   password: string,
 ): Promise<CustomerWifiInfo> {
   const row = await verifyCustomer(username, password);
-  const detail = await findDevice(username);
+  const detail = await findDevice(row.username);
   return {
     username: row.username,
     plan: row.plan ?? "",
@@ -109,8 +109,8 @@ export async function customerWifiUpdate(input: {
   ssid: string;
   wifiPassword: string;
 }) {
-  await verifyCustomer(input.username, input.password);
-  const detail = await findDevice(input.username);
+  const row = await verifyCustomer(input.username, input.password);
+  const detail = await findDevice(row.username);
   const all = bandsOf(detail);
   const pilih = input.indexes.length
     ? all.filter((b) => input.indexes.includes(b.index))

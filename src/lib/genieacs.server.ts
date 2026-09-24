@@ -49,6 +49,7 @@ export type AcsDevice = {
   ppp: string;
   /** Semua username PPPoE + tag perangkat, untuk pencocokan pelanggan. */
   pppNames: string[];
+  tags: string[];
   ssids: string[];
   clientCount: number;
 };
@@ -247,9 +248,19 @@ function clientCountOf(params: Record<string, string>) {
 
 function summarize(doc: Record<string, unknown>, params: Record<string, string>): AcsDevice {
   const id = String(doc["_id"] ?? "");
-  const lastInformRaw = (doc["_lastInform"] ?? doc["_registered"]) as string | number | undefined;
-  const lastInform = lastInformRaw ? new Date(lastInformRaw).toISOString() : "";
-  const online = lastInform ? Date.now() - new Date(lastInform).getTime() < 10 * 60 * 1000 : false;
+  // _registered is only the first registration, not evidence of a recent inform.
+  const lastInformRaw = doc["_lastInform"] as string | number | undefined;
+  const lastInformDate = lastInformRaw ? new Date(lastInformRaw) : null;
+  const lastInform = lastInformDate && !Number.isNaN(lastInformDate.getTime())
+    ? lastInformDate.toISOString()
+    : "";
+  // This reflects recent TR-069 informs, NOT the customer's PPPoE/Internet state.
+  // A longer periodic-inform interval should not be mislabeled as an outage.
+  const periodicInterval = Number(pick(params, /(?:^|\.)ManagementServer\.PeriodicInformInterval$/)?.value);
+  const recentWindowMs = Number.isFinite(periodicInterval) && periodicInterval > 0
+    ? Math.max(20 * 60, Math.min(periodicInterval * 2, 24 * 60 * 60)) * 1000
+    : 20 * 60 * 1000;
+  const online = lastInform ? Date.now() - new Date(lastInform).getTime() < recentWindowMs : false;
   const ip =
     pick(params, /WANIPConnection\.\d+\.ExternalIPAddress$/)?.value ||
     pick(params, /WANPPPConnection\.\d+\.ExternalIPAddress$/)?.value ||
@@ -275,6 +286,7 @@ function summarize(doc: Record<string, unknown>, params: Record<string, string>)
       ...pppNamesOf(params),
       ...((Array.isArray(doc["_tags"]) ? doc["_tags"] : []) as unknown[]).map(String),
     ],
+    tags: ((Array.isArray(doc["_tags"]) ? doc["_tags"] : []) as unknown[]).map(String),
     ssids: ssidsOf(params),
     clientCount: clientCountOf(params),
   };

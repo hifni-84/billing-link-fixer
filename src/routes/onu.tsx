@@ -79,7 +79,7 @@ function OnuPage() {
   });
 
   const list = (devices.data?.devices ?? []).filter((d) => {
-    const t = `${d.serial} ${d.model} ${d.manufacturer} ${d.ppp} ${d.ip} ${d.id} ${(
+    const t = `${d.serial} ${d.model} ${d.manufacturer} ${d.ppp} ${(d.tags ?? []).join(" ")} ${d.ip} ${d.id} ${(
       d.ssids ?? []
     ).join(" ")}`.toLowerCase();
     return t.includes(q.trim().toLowerCase());
@@ -145,6 +145,10 @@ function OnuPage() {
         </Button>
       </div>
 
+      <p className="text-xs text-muted-foreground">
+        Jika User PPPoE kosong, portal WiFi hanya bisa mengenali modem bila ada tag yang sama persis dengan username internet pelanggan. Periksa username di WAN modem atau tag perangkat di GenieACS. Status laporan modem tidak sama dengan status internet pelanggan.
+      </p>
+
       {devices.data && !devices.data.ok ? (
         <div className="rounded-xl border border-dashed p-6 text-sm">
           <p className="font-medium">Gagal ambil data dari GenieACS</p>
@@ -203,12 +207,24 @@ function OnuPage() {
                       {d.clientCount ?? 0}
                     </span>
                   </td>
-                  <td className="px-3 py-2">{d.ppp || "-"}</td>
+                  <td className="px-3 py-2">
+                    {d.ppp || "-"}
+                    {(d.tags ?? []).length > 0 && (
+                      <span className="block text-xs text-muted-foreground">Tag: {d.tags.join(", ")}</span>
+                    )}
+                  </td>
                   <td className="px-3 py-2">{d.ip || "-"}</td>
                   <td className="px-3 py-2">
-                    <Badge variant={d.online ? "default" : "secondary"}>
-                      {d.online ? "Online" : "Offline"}
-                    </Badge>
+                    <span title={d.lastInform ? `Laporan terakhir: ${new Date(d.lastInform).toLocaleString("id-ID")}` : "Belum ada laporan dari modem"}>
+                      <Badge variant={d.online ? "default" : "secondary"}>
+                        {d.online ? "Laporan sesuai jadwal" : d.lastInform ? "Laporan terlambat" : "Belum ada laporan"}
+                      </Badge>
+                      {d.lastInform && (
+                        <span className="ml-2 whitespace-nowrap text-xs text-muted-foreground">
+                          {new Date(d.lastInform).toLocaleString("id-ID", { dateStyle: "short", timeStyle: "short" })}
+                        </span>
+                      )}
+                    </span>
                   </td>
                   <td className="px-3 py-2 text-right">
                     <Button size="sm" variant="outline" onClick={() => setOpenId(d.id)}>

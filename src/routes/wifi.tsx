@@ -169,10 +169,12 @@ function WifiPortalPage() {
                 {info.plan ? ` — paket ${info.plan}` : ""}
               </p>
               <p className="text-muted-foreground">Aktif hingga: {tanggal(info.expiresAt)}</p>
-              <p className={info.device.online ? "text-primary" : "text-destructive"}>
+              <p className={info.device.online ? "text-primary" : "text-muted-foreground"}>
                 {info.device.online
-                  ? "Modem online"
-                  : `Modem offline (terakhir: ${tanggal(info.device.lastInform)})`}
+                   ? "Laporan modem sesuai jadwal"
+                   : info.device.lastInform
+                     ? `Laporan modem terlambat (terakhir: ${tanggal(info.device.lastInform)})`
+                     : "Belum ada laporan modem ke pengelola"}
               </p>
             </div>
             <Button variant="ghost" size="sm" onClick={keluar}>
@@ -270,7 +272,7 @@ function WifiPortalPage() {
 
             {!info.device.online && (
               <p className="text-xs text-muted-foreground">
-                Modem sedang offline. Perubahan baru diterapkan setelah modem menyala kembali.
+                  Laporan modem terlambat; ini belum tentu gangguan internet. Perubahan mungkin menunggu modem menghubungi pengelola kembali.
               </p>
             )}
           </form>
