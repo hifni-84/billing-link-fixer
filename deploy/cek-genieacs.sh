@@ -38,6 +38,7 @@ fields = [
     '_id', '_lastInform', '_tags',
     'InternetGatewayDevice.DeviceInfo.SerialNumber',
     'InternetGatewayDevice.WANDevice', 'InternetGatewayDevice.X_HW_WANDevice',
+    'InternetGatewayDevice.X_ZTE-COM_WANDevice',
     'Device.DeviceInfo.SerialNumber', 'Device.PPP', 'Device.IP',
 ]
 url = 'http://127.0.0.1:7557/devices/?' + urllib.parse.urlencode({'projection': ','.join(fields)})
