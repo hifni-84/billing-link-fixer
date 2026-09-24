@@ -17,6 +17,7 @@ export type AcsWifi = {
   ssidPath: string;
   key: string;
   keyPath: string | null;
+  open?: boolean;
   enabled: boolean | null;
   enablePath: string | null;
   clients: AcsClient[];
