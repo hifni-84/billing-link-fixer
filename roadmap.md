@@ -1,3 +1,5 @@
 - [x] Perjelas status modem di menu ONU agar laporan GenieACS yang terlambat tidak disalahartikan sebagai putus internet.
 - [x] Telusuri kegagalan masuk portal WiFi PPPoE dan perbaiki penyebab yang dapat dipastikan tanpa akses server produksi.
 - [x] Verifikasi tampilan publik dan pesan backend; login nyata dan keterkaitan modem akun pelanggan masih memerlukan pemeriksaan data server produksi.
+- [ ] Pastikan daftar ONU dan portal WiFi membaca sumber GenieACS yang sama, serta pencarian menemukan username PPPoE pada semua koneksi.
+- [ ] Tentukan langkah aman untuk memeriksa apakah modem Hadi sudah mendaftar ke GenieACS produksi.
