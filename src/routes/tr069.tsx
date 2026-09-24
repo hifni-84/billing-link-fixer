@@ -70,8 +70,10 @@ function Tr069Page() {
       const day = d.lastInform.slice(0, 10);
       byDay.set(day, (byDay.get(day) ?? 0) + 1);
     }
-    const [day, count] = [...byDay.entries()].sort((a, b) => b[1] - a[1])[0] ?? [];
-    return day && count >= 5 && count >= all.length / 2 ? { day, count, total: all.length } : null;
+    const mostAffected = [...byDay.entries()].sort((a, b) => b[1] - a[1])[0];
+    if (!mostAffected) return null;
+    const [day, count] = mostAffected;
+    return count >= 5 && count >= all.length / 2 ? { day, count, total: all.length } : null;
   }, [devices.data]);
 
   return (
