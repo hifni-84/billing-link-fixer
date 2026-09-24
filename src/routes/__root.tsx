@@ -140,7 +140,7 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const pathname = useRouterState({ select: (r) => r.location.pathname });
   // Portal pelanggan bersifat publik: tanpa login dan tanpa sidebar admin.
-  const publik = pathname.startsWith("/portal");
+  const publik = pathname === "/portal" || pathname === "/wifi";
 
   if (publik) {
     return (

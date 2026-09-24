@@ -3,7 +3,7 @@
  * WiFi pada ONT pelanggan melalui GenieACS (TR-069).
  */
 
-import { query } from "./radius.server";
+import { getSettings, query } from "./radius.server";
 import { acsGetDevice, acsListDevices, acsSetParams } from "./genieacs.server";
 
 export type CustomerWifiBand = {
@@ -42,7 +42,7 @@ async function verifyCustomer(username: string, password: string) {
        FROM billing_voucher
       WHERE username = ? AND password = ? AND service = 'pppoe'
       LIMIT 1`,
-    [username, password],
+    [username.trim(), password],
   );
   const row = rows[0];
   if (!row) throw new Error("Username atau password PPPoE salah.");
@@ -52,17 +52,21 @@ async function verifyCustomer(username: string, password: string) {
 
 /** Cari ONT pelanggan di GenieACS berdasarkan username PPPoE-nya. */
 async function findDevice(username: string) {
-  const devices = await acsListDevices();
+  const settings = await getSettings();
+  const nbiUrl = settings["genieacs.nbiUrl"] || undefined;
+  const devices = await acsListDevices(nbiUrl);
   const u = username.trim().toLowerCase();
   const target = devices.find((d) =>
     [d.ppp, ...(d.pppNames ?? [])].some((n) => (n || "").trim().toLowerCase() === u),
   );
   if (!target) {
     throw new Error(
-      "Modem Anda belum terhubung ke sistem pengelolaan jarak jauh. Hubungi admin.",
+      devices.length
+        ? "Akun internet ditemukan, tetapi modem belum tertaut. Minta admin periksa User PPPoE atau tag modem di GenieACS."
+        : "Belum ada modem terdaftar di sistem pengelolaan jarak jauh. Hubungi admin.",
     );
   }
-  return acsGetDevice(target.id);
+  return acsGetDevice(target.id, nbiUrl);
 }
 
 const bandsOf = (detail: Awaited<ReturnType<typeof acsGetDevice>>) =>
@@ -125,6 +129,7 @@ export async function customerWifiUpdate(input: {
     }
   }
   if (!writes.length) throw new Error("Tidak ada perubahan untuk disimpan.");
-  await acsSetParams(detail.id, writes);
+  const settings = await getSettings();
+  await acsSetParams(detail.id, writes, settings["genieacs.nbiUrl"] || undefined);
   return { changed: pilih.map((b) => b.band) };
 }
