@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/table";
 import { formatBytes } from "@/lib/mikrotik-types";
 import { trafficGet } from "@/lib/traffic.functions";
-import { formatBps, type TrafficAppKey } from "@/lib/traffic-types";
+import { formatBps, TRAFFIC_APPS, type TrafficAppKey } from "@/lib/traffic-types";
 
 export const Route = createFileRoute("/trafik")({
   head: () => ({
@@ -74,7 +74,16 @@ function TrafikPage() {
   });
 
   const data = q.data;
-  const apps = data?.apps ?? [];
+  const apps =
+    data?.apps ??
+    TRAFFIC_APPS.map((app) => ({
+      ...app,
+      bytes: 0,
+      bps: 0,
+      users: 0,
+      flows: 0,
+      clients: [],
+    }));
   const aktif = apps.find((a) => a.key === pilih);
 
   return (
