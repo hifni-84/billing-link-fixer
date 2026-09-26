@@ -31,16 +31,27 @@ async function ntop(path: string, params: Record<string, string | number> = {}) 
 
   const tryFetch = async (init: RequestInit, withQs: boolean) => {
     const url = `${c.url}${path}${withQs && qs ? `?${qs}` : ""}`;
-    const res = await fetch(url, { ...init, headers });
+    const res = await fetch(url, { ...init, headers, redirect: "manual" });
+    if (res.status >= 300 && res.status < 400) throw new Error("LOGIN");
+    if (res.status === 401 || res.status === 403) throw new Error("LOGIN");
     if (!res.ok) throw new Error(`ntopng ${res.status} ${path}`);
-    const json = (await res.json()) as Row;
+    const text = await res.text();
+    if (/^\s*</.test(text)) throw new Error("LOGIN");
+    const json = JSON.parse(text) as Row;
     return json?.["rsp"] ?? json;
   };
 
+  const loginMsg =
+    "ntopng menolak login billing. Password admin ntopng sudah diganti — isi NTOPNG_USER dan NTOPNG_PASS di pengaturan server billing (lihat petunjuk).";
   try {
     return await tryFetch({ method: "GET" }, true);
-  } catch {
-    return await tryFetch({ method: "POST", body: JSON.stringify(params) }, false);
+  } catch (e) {
+    try {
+      return await tryFetch({ method: "POST", body: JSON.stringify(params) }, false);
+    } catch (e2) {
+      const m = (e2 as Error).message || (e as Error).message;
+      throw new Error(m === "LOGIN" ? loginMsg : m);
+    }
   }
 }
 
