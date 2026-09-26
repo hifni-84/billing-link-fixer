@@ -22,6 +22,7 @@ import { Route as SesiAktifRouteImport } from './routes/sesi-aktif'
 import { Route as TagihanRouteImport } from './routes/tagihan'
 import { Route as TemplateRouteImport } from './routes/template'
 import { Route as Tr069RouteImport } from './routes/tr069'
+import { Route as TrafikRouteImport } from './routes/trafik'
 import { Route as UserAktifRouteImport } from './routes/user-aktif'
 import { Route as VoucherRouteImport } from './routes/voucher'
 import { Route as VpnRouteImport } from './routes/vpn'
@@ -95,6 +96,11 @@ const Tr069Route = Tr069RouteImport.update({
   path: '/tr069',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TrafikRoute = TrafikRouteImport.update({
+  id: '/trafik',
+  path: '/trafik',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const UserAktifRoute = UserAktifRouteImport.update({
   id: '/user-aktif',
   path: '/user-aktif',
@@ -146,6 +152,7 @@ export interface FileRoutesByFullPath {
   '/tagihan': typeof TagihanRoute
   '/template': typeof TemplateRoute
   '/tr069': typeof Tr069Route
+  '/trafik': typeof TrafikRoute
   '/user-aktif': typeof UserAktifRoute
   '/voucher': typeof VoucherRoute
   '/vpn': typeof VpnRoute
@@ -168,6 +175,7 @@ export interface FileRoutesByTo {
   '/tagihan': typeof TagihanRoute
   '/template': typeof TemplateRoute
   '/tr069': typeof Tr069Route
+  '/trafik': typeof TrafikRoute
   '/user-aktif': typeof UserAktifRoute
   '/voucher': typeof VoucherRoute
   '/vpn': typeof VpnRoute
@@ -191,6 +199,7 @@ export interface FileRoutesById {
   '/tagihan': typeof TagihanRoute
   '/template': typeof TemplateRoute
   '/tr069': typeof Tr069Route
+  '/trafik': typeof TrafikRoute
   '/user-aktif': typeof UserAktifRoute
   '/voucher': typeof VoucherRoute
   '/vpn': typeof VpnRoute
@@ -215,6 +224,7 @@ export interface FileRouteTypes {
     | '/tagihan'
     | '/template'
     | '/tr069'
+    | '/trafik'
     | '/user-aktif'
     | '/voucher'
     | '/vpn'
@@ -237,6 +247,7 @@ export interface FileRouteTypes {
     | '/tagihan'
     | '/template'
     | '/tr069'
+    | '/trafik'
     | '/user-aktif'
     | '/voucher'
     | '/vpn'
@@ -259,6 +270,7 @@ export interface FileRouteTypes {
     | '/tagihan'
     | '/template'
     | '/tr069'
+    | '/trafik'
     | '/user-aktif'
     | '/voucher'
     | '/vpn'
@@ -282,6 +294,7 @@ export interface RootRouteChildren {
   TagihanRoute: typeof TagihanRoute
   TemplateRoute: typeof TemplateRoute
   Tr069Route: typeof Tr069Route
+  TrafikRoute: typeof TrafikRoute
   UserAktifRoute: typeof UserAktifRoute
   VoucherRoute: typeof VoucherRoute
   VpnRoute: typeof VpnRoute
@@ -384,6 +397,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof Tr069RouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/trafik': {
+      id: '/trafik'
+      path: '/trafik'
+      fullPath: '/trafik'
+      preLoaderRoute: typeof TrafikRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/user-aktif': {
       id: '/user-aktif'
       path: '/user-aktif'
@@ -450,6 +470,7 @@ const rootRouteChildren: RootRouteChildren = {
   TagihanRoute: TagihanRoute,
   TemplateRoute: TemplateRoute,
   Tr069Route: Tr069Route,
+  TrafikRoute: TrafikRoute,
   UserAktifRoute: UserAktifRoute,
   VoucherRoute: VoucherRoute,
   VpnRoute: VpnRoute,
