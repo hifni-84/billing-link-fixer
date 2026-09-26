@@ -8,3 +8,5 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+Trafik aplikasi harus membaca seluruh metadata flow ntopng dan memprioritaskan aplikasi spesifik sebelum Browsing Web/Lainnya agar label nDPI lintas versi tidak hilang.
