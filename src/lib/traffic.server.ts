@@ -180,43 +180,22 @@ async function activeFlows(ifid: number): Promise<Row[]> {
     "/lua/rest/v2/get/flow/active.lua",
     "/lua/rest/v2/get/flows/active.lua",
   ];
+  // Satu panggilan cepat saja: total bandwidth diambil dari sensor interface
+  // ntopng, jadi tidak perlu menarik seluruh halaman flow (itu yang membuat
+  // halaman lambat memuat).
   for (const p of paths) {
     try {
-      const all: Row[] = [];
-      const seenPages = new Set<string>();
-      const perPage = 2000;
-      for (let page = 1; page <= 20; page++) {
-        const rsp = (await ntop(p, { ifid, currentPage: page, perPage })) as Row;
-        const data = (rsp?.["data"] ?? rsp) as Row[] | Row;
-        const rows = (Array.isArray(data) ? data : Object.values(data ?? {})) as Row[];
-        if (!rows.length) break;
-
-        // Beberapa versi ntopng mengabaikan currentPage dan selalu mengirim
-        // halaman pertama. Hentikan segera agar server function tidak menunggu
-        // 20 respons yang sama dan halaman billing tidak terus "Memuat data".
-        const first = rows[0] ?? {};
-        const last = rows[rows.length - 1] ?? {};
-        const pageKey = JSON.stringify([
-          rows.length,
-          str(first, "flow.id", "id", "key", "cli.ip", "cli_ip"),
-          str(first, "srv.ip", "srv_ip", "proto.l7", "l7_proto_name"),
-          str(last, "flow.id", "id", "key", "cli.ip", "cli_ip"),
-          str(last, "srv.ip", "srv_ip", "proto.l7", "l7_proto_name"),
-        ]);
-        if (seenPages.has(pageKey)) break;
-        seenPages.add(pageKey);
-
-        all.push(...rows);
-        const total = num(rsp ?? {}, "totalRows", "recordsTotal", "total");
-        if (rows.length < perPage || (total && all.length >= total)) break;
-      }
-      if (all.length) return all;
+      const rsp = (await ntop(p, { ifid, currentPage: 1, perPage: 3000 })) as Row;
+      const data = (rsp?.["data"] ?? rsp) as Row[] | Row;
+      const rows = (Array.isArray(data) ? data : Object.values(data ?? {})) as Row[];
+      if (rows.length) return rows;
     } catch {
       /* coba endpoint berikutnya */
     }
   }
   return [];
 }
+
 
 /** Kecepatan total interface langsung dari ntopng (sama dengan angka di pojok atas ntopng). */
 async function ifaceThroughput(ifid: number): Promise<{ bps: number; bytes: number } | null> {
