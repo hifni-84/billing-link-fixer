@@ -85,7 +85,7 @@ const RULES: Record<TrafficAppKey, RegExp> = {
   facebook: /facebook|fbcdn|messenger|\bfb\b/i,
   instagram: /instagram|cdninstagram/i,
   whatsapp: /whatsapp|wa\.me|whatsappnet/i,
-  telegram: /telegram|\btdesktop\b|\btg\b/i,
+  telegram: /telegram|tdesktop|\btg\b|\bt\.me\b|telesco\.pe|mtproto/i,
   game: /gaming|game|mobilelegends|moonton|garena|freefire|pubg|steam|riot|valorant|genshin|mihoyo|roblox|epicgames|battle\.?net|playstation|xbox|codm|efootball|supercell|clashofclans/i,
   meeting: /zoom|webex|gotomeeting|teams|skype|meet\.google|googlemeet|hangout|whereby|jitsi/i,
   browsing: /\b(http|https|tls|quic|ssl|web|google|bing|yahoo|wikipedia|shopee|tokopedia|lazada|blogspot|wordpress|news|detik|kompas|tribun|okezone|cloudflare|amazonaws|akamai|cdn)\b/i,
@@ -193,16 +193,17 @@ export async function trafficSnapshot(): Promise<TrafficSnapshot> {
     const label = [
       str(f, "proto.l7", "l7_proto_name", "l7_proto", "protocol.l7", "application"),
       str(f, "proto.master_l7", "l7_master_proto_name"),
-      str(f, "info", "server_name", "sni", "tls.server_name"),
+      str(f, "proto.app", "l7_app_proto_name", "l7proto"),
+      str(f, "info", "server_name", "sni", "tls.server_name", "host_server_name"),
       str(f, "srv.name", "srv_ip.label", "server.name"),
     ]
       .filter(Boolean)
       .join(" ");
-    const key = classify(label);
-    if (!key) continue;
 
     const cli = str(f, "cli.ip", "cli_ip.ip", "client.ip", "cli_ip");
     const srv = str(f, "srv.ip", "srv_ip.ip", "server.ip", "srv_ip");
+    const key: TrafficAppKey =
+      isTelegramIp(srv) || isTelegramIp(cli) ? "telegram" : classify(label);
     const ip = isPrivate(cli) ? cli : isPrivate(srv) ? srv : cli || srv;
     if (!ip) continue;
 
