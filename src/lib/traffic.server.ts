@@ -182,15 +182,36 @@ async function activeFlows(ifid: number): Promise<Row[]> {
   ];
   for (const p of paths) {
     try {
-      const rsp = (await ntop(p, { ifid, currentPage: 1, perPage: 2000 })) as Row;
-      const data = (rsp?.["data"] ?? rsp) as Row[] | Row;
-      const rows = Array.isArray(data) ? data : Object.values(data ?? {});
-      if (rows.length) return rows as Row[];
+      const all: Row[] = [];
+      const perPage = 5000;
+      for (let page = 1; page <= 20; page++) {
+        const rsp = (await ntop(p, { ifid, currentPage: page, perPage })) as Row;
+        const data = (rsp?.["data"] ?? rsp) as Row[] | Row;
+        const rows = (Array.isArray(data) ? data : Object.values(data ?? {})) as Row[];
+        all.push(...rows);
+        const total = num(rsp ?? {}, "totalRows", "recordsTotal", "total");
+        if (rows.length < perPage || (total && all.length >= total)) break;
+      }
+      if (all.length) return all;
     } catch {
       /* coba endpoint berikutnya */
     }
   }
   return [];
+}
+
+/** Kecepatan total interface langsung dari ntopng (sama dengan angka di pojok atas ntopng). */
+async function ifaceThroughput(ifid: number): Promise<{ bps: number; bytes: number } | null> {
+  try {
+    const rsp = (await ntop("/lua/rest/v2/get/interface/data.lua", { ifid })) as Row;
+    const bps =
+      num(rsp, "throughput_bps") ||
+      num(rsp, "throughput.download.bps") + num(rsp, "throughput.upload.bps");
+    const bytes = num(rsp, "bytes") || num(rsp, "bytes_download") + num(rsp, "bytes_upload");
+    return bps ? { bps, bytes } : null;
+  } catch {
+    return null;
+  }
 }
 
 async function sessionIpMap(): Promise<Map<string, string>> {
@@ -234,7 +255,7 @@ export async function trafficSnapshot(): Promise<TrafficSnapshot> {
     return { ...base, error: (e as Error).message || "Tidak bisa menghubungi ntopng" };
   }
 
-  const flows = await activeFlows(iface.id);
+  const [flows, ifTotal] = await Promise.all([activeFlows(iface.id), ifaceThroughput(iface.id)]);
   const users = await sessionIpMap();
 
   const buckets = new Map<TrafficAppKey, Map<string, TrafficClient>>();
@@ -299,7 +320,7 @@ export async function trafficSnapshot(): Promise<TrafficSnapshot> {
     iface: iface.name,
     apps,
     totalBytes: apps.reduce((s, a) => s + a.bytes, 0),
-    totalBps: apps.reduce((s, a) => s + a.bps, 0),
+    totalBps: ifTotal?.bps || apps.reduce((s, a) => s + a.bps, 0),
     totalUsers: allIps.size,
     updatedAt: new Date().toISOString(),
   };
