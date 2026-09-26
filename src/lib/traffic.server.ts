@@ -255,7 +255,7 @@ export async function trafficSnapshot(): Promise<TrafficSnapshot> {
     return { ...base, error: (e as Error).message || "Tidak bisa menghubungi ntopng" };
   }
 
-  const flows = await activeFlows(iface.id);
+  const [flows, ifTotal] = await Promise.all([activeFlows(iface.id), ifaceThroughput(iface.id)]);
   const users = await sessionIpMap();
 
   const buckets = new Map<TrafficAppKey, Map<string, TrafficClient>>();
@@ -320,7 +320,7 @@ export async function trafficSnapshot(): Promise<TrafficSnapshot> {
     iface: iface.name,
     apps,
     totalBytes: apps.reduce((s, a) => s + a.bytes, 0),
-    totalBps: apps.reduce((s, a) => s + a.bps, 0),
+    totalBps: ifTotal?.bps || apps.reduce((s, a) => s + a.bps, 0),
     totalUsers: allIps.size,
     updatedAt: new Date().toISOString(),
   };
