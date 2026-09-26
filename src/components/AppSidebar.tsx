@@ -48,6 +48,7 @@ const items = [
   { title: "Template Voucher", desc: "Desain cetak", url: "/template", icon: LayoutTemplate },
   { title: "TR-069", desc: "Modem · WiFi · WAN", url: "/tr069", icon: Radio },
   { title: "VPN Router", desc: "WireGuard multi-router", url: "/vpn", icon: ShieldCheck },
+  { title: "Trafik Aplikasi", desc: "YouTube · TikTok · Game", url: "/trafik", icon: TrendingUp },
   { title: "Laporan", desc: "Pendapatan", url: "/laporan", icon: BarChart3 },
   { title: "Aktivasi", desc: "Lisensi & masa aktif", url: "/aktivasi", icon: KeyRound },
   { title: "Pengaturan", desc: "Akun, NAS & sistem", url: "/pengaturan", icon: Settings },
