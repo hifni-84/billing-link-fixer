@@ -8,3 +8,5 @@
 - [x] Bedakan modem yang berhenti melapor TR-069 dari internet pelanggan yang putus, dan tampilkan peringatan jika banyak modem terhenti bersamaan.
 - [x] Sediakan pemeriksaan aman di server produksi untuk jalur ACS dan pencarian modem Hadi tanpa menampilkan sandi.
 - [ ] Periksa hasil pemeriksaan GenieACS di server produksi dan pulihkan jalur modem ke port 7547 jika masih terputus.
+- [x] Pulihkan deteksi Telegram tanpa menghapus kategori Browsing Web dan Lainnya.
+- [ ] Verifikasi pengguna Telegram muncul kembali setelah pembaruan server produksi.

@@ -72,6 +72,26 @@ const str = (r: Row, ...keys: string[]) => {
   return "";
 };
 
+/** Gabungkan metadata teks karena versi ntopng menaruh label nDPI di kolom berbeda. */
+const searchableText = (value: unknown, depth = 0): string[] => {
+  if (depth > 4 || value === null || value === undefined) return [];
+  if (typeof value === "string") {
+    const text = value.trim();
+    return text && text.length <= 500 ? [text] : [];
+  }
+  if (typeof value === "number" || typeof value === "boolean") return [];
+  if (Array.isArray(value)) {
+    return value.flatMap((item) => searchableText(item, depth + 1));
+  }
+  if (typeof value === "object") {
+    return Object.entries(value as Row).flatMap(([key, item]) => [
+      key,
+      ...searchableText(item, depth + 1),
+    ]);
+  }
+  return [];
+};
+
 const isPrivate = (ip: string) =>
   /^10\./.test(ip) ||
   /^192\.168\./.test(ip) ||
@@ -85,16 +105,27 @@ const TELEGRAM_NETS: [string, number][] = [
   ["95.161.64.0", 20], ["185.76.151.0", 24],
 ];
 const ipNum = (ip: string) => {
-  const p = ip.split(".").map(Number);
+  const clean = ip.trim().replace(/^::ffff:/i, "").replace(/^\[|\]$/g, "").split(":")[0] ?? "";
+  const p = clean.split(".").map(Number);
   if (p.length !== 4 || p.some((n) => !Number.isInteger(n) || n < 0 || n > 255)) return null;
-  return ((p[0]! << 24) | (p[1]! << 16) | (p[2]! << 8) | p[3]!) >>> 0;
+  const [a, b, c, d] = p;
+  if (a === undefined || b === undefined || c === undefined || d === undefined) return null;
+  return ((a << 24) | (b << 16) | (c << 8) | d) >>> 0;
 };
 const isTelegramIp = (ip: string) => {
+  const clean = ip.trim().toLowerCase().replace(/^\[|\]$/g, "");
+  if (
+    clean.startsWith("2001:b28:f23c:") ||
+    clean.startsWith("2001:b28:f23d:") ||
+    clean.startsWith("2001:b28:f23f:") ||
+    clean.startsWith("2001:67c:4e8:")
+  ) return true;
   const n = ipNum(ip);
   if (n === null) return false;
   return TELEGRAM_NETS.some(([net, bits]) => {
     const mask = (0xffffffff << (32 - bits)) >>> 0;
-    return ((n & mask) >>> 0) === ((ipNum(net)! & mask) >>> 0);
+    const network = ipNum(net);
+    return network !== null && ((n & mask) >>> 0) === ((network & mask) >>> 0);
   });
 };
 
@@ -105,7 +136,7 @@ const RULES: Record<TrafficAppKey, RegExp> = {
   facebook: /facebook|fbcdn|messenger|\bfb\b/i,
   instagram: /instagram|cdninstagram/i,
   whatsapp: /whatsapp|wa\.me|whatsappnet/i,
-  telegram: /telegram|tdesktop|\btg\b|\bt\.me\b|telesco\.pe|mtproto/i,
+  telegram: /telegram|telegramdesktop|tdesktop|\btg\b|\bt\.me\b|telesco\.pe|mtproto|telegram\.org|telegram\.me|telegra\.ph/i,
   game: /gaming|game|mobilelegends|moonton|garena|freefire|pubg|steam|riot|valorant|genshin|mihoyo|roblox|epicgames|battle\.?net|playstation|xbox|codm|efootball|supercell|clashofclans/i,
   meeting: /zoom|webex|gotomeeting|teams|skype|meet\.google|googlemeet|hangout|whereby|jitsi/i,
   browsing: /\b(http|https|tls|quic|ssl|web|google|bing|yahoo|wikipedia|shopee|tokopedia|lazada|blogspot|wordpress|news|detik|kompas|tribun|okezone|cloudflare|amazonaws|akamai|cdn)\b/i,
@@ -210,7 +241,7 @@ export async function trafficSnapshot(): Promise<TrafficSnapshot> {
   const agg = new Map<TrafficAppKey, { bytes: number; bps: number; flows: number }>();
 
   for (const f of flows) {
-    const label = [
+    const preferredLabel = [
       str(f, "proto.l7", "l7_proto_name", "l7_proto", "protocol.l7", "application"),
       str(f, "proto.master_l7", "l7_master_proto_name"),
       str(f, "proto.app", "l7_app_proto_name", "l7proto"),
@@ -219,6 +250,8 @@ export async function trafficSnapshot(): Promise<TrafficSnapshot> {
     ]
       .filter(Boolean)
       .join(" ");
+
+    const label = `${preferredLabel} ${searchableText(f).join(" ")}`;
 
     const cli = str(f, "cli.ip", "cli_ip.ip", "client.ip", "cli_ip");
     const srv = str(f, "srv.ip", "srv_ip.ip", "server.ip", "srv_ip");
