@@ -4,9 +4,11 @@ import { useState } from "react";
 import {
   Facebook,
   Gamepad2,
+  Globe,
   Instagram,
   MessageCircle,
   Music2,
+  Network,
   RefreshCw,
   Send,
   Users,
@@ -58,6 +60,8 @@ const ICONS: Record<TrafficAppKey, typeof Youtube> = {
   telegram: Send,
   game: Gamepad2,
   meeting: Video,
+  browsing: Globe,
+  other: Network,
 };
 
 function TrafikPage() {

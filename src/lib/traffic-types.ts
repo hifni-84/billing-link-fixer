@@ -8,7 +8,9 @@ export type TrafficAppKey =
   | "whatsapp"
   | "telegram"
   | "game"
-  | "meeting";
+  | "meeting"
+  | "browsing"
+  | "other";
 
 export type TrafficClient = {
   ip: string;
@@ -53,6 +55,8 @@ export const TRAFFIC_APPS: { key: TrafficAppKey; label: string }[] = [
   { key: "telegram", label: "Telegram" },
   { key: "game", label: "Game" },
   { key: "meeting", label: "Zoom / Meeting" },
+  { key: "browsing", label: "Browsing Web" },
+  { key: "other", label: "Lainnya" },
 ];
 
 export function formatBps(bps: number) {

@@ -88,13 +88,21 @@ const RULES: Record<TrafficAppKey, RegExp> = {
   telegram: /telegram|\btdesktop\b|\btg\b/i,
   game: /gaming|game|mobilelegends|moonton|garena|freefire|pubg|steam|riot|valorant|genshin|mihoyo|roblox|epicgames|battle\.?net|playstation|xbox|codm|efootball|supercell|clashofclans/i,
   meeting: /zoom|webex|gotomeeting|teams|skype|meet\.google|googlemeet|hangout|whereby|jitsi/i,
+  browsing: /\b(http|https|tls|quic|ssl|web|google|bing|yahoo|wikipedia|shopee|tokopedia|lazada|blogspot|wordpress|news|detik|kompas|tribun|okezone|cloudflare|amazonaws|akamai|cdn)\b/i,
+  other: /.^/,
 };
 
-function classify(text: string): TrafficAppKey | null {
-  for (const { key } of TRAFFIC_APPS) {
+/** Aplikasi utama (tanpa browsing/other) diperiksa lebih dulu. */
+const PRIMARY = TRAFFIC_APPS.map((a) => a.key).filter(
+  (k) => k !== "browsing" && k !== "other",
+);
+
+function classify(text: string): TrafficAppKey {
+  for (const key of PRIMARY) {
     if (RULES[key].test(text)) return key;
   }
-  return null;
+  if (RULES.browsing.test(text)) return "browsing";
+  return "other";
 }
 
 async function pickIface() {
