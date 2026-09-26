@@ -4,9 +4,11 @@ import { useState } from "react";
 import {
   Facebook,
   Gamepad2,
+  Globe,
   Instagram,
   MessageCircle,
   Music2,
+  Network,
   RefreshCw,
   Send,
   Users,
