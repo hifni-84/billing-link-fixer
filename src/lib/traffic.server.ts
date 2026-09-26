@@ -78,6 +78,26 @@ const isPrivate = (ip: string) =>
   /^172\.(1[6-9]|2\d|3[01])\./.test(ip) ||
   /^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./.test(ip);
 
+/** Blok IP resmi Telegram. */
+const TELEGRAM_NETS: [string, number][] = [
+  ["91.108.4.0", 22], ["91.108.8.0", 22], ["91.108.12.0", 22], ["91.108.16.0", 22],
+  ["91.108.20.0", 22], ["91.108.56.0", 22], ["91.105.192.0", 23], ["149.154.160.0", 20],
+  ["95.161.64.0", 20], ["185.76.151.0", 24],
+];
+const ipNum = (ip: string) => {
+  const p = ip.split(".").map(Number);
+  if (p.length !== 4 || p.some((n) => !Number.isInteger(n) || n < 0 || n > 255)) return null;
+  return ((p[0]! << 24) | (p[1]! << 16) | (p[2]! << 8) | p[3]!) >>> 0;
+};
+const isTelegramIp = (ip: string) => {
+  const n = ipNum(ip);
+  if (n === null) return false;
+  return TELEGRAM_NETS.some(([net, bits]) => {
+    const mask = (0xffffffff << (32 - bits)) >>> 0;
+    return ((n & mask) >>> 0) === ((ipNum(net)! & mask) >>> 0);
+  });
+};
+
 /** Pola pencocokan nama protokol L7 nDPI + nama domain (SNI) per aplikasi. */
 const RULES: Record<TrafficAppKey, RegExp> = {
   youtube: /youtube|googlevideo|yt3\.ggpht|ytimg/i,
@@ -85,7 +105,7 @@ const RULES: Record<TrafficAppKey, RegExp> = {
   facebook: /facebook|fbcdn|messenger|\bfb\b/i,
   instagram: /instagram|cdninstagram/i,
   whatsapp: /whatsapp|wa\.me|whatsappnet/i,
-  telegram: /telegram|\btdesktop\b|\btg\b/i,
+  telegram: /telegram|tdesktop|\btg\b|\bt\.me\b|telesco\.pe|mtproto/i,
   game: /gaming|game|mobilelegends|moonton|garena|freefire|pubg|steam|riot|valorant|genshin|mihoyo|roblox|epicgames|battle\.?net|playstation|xbox|codm|efootball|supercell|clashofclans/i,
   meeting: /zoom|webex|gotomeeting|teams|skype|meet\.google|googlemeet|hangout|whereby|jitsi/i,
   browsing: /\b(http|https|tls|quic|ssl|web|google|bing|yahoo|wikipedia|shopee|tokopedia|lazada|blogspot|wordpress|news|detik|kompas|tribun|okezone|cloudflare|amazonaws|akamai|cdn)\b/i,
@@ -193,16 +213,17 @@ export async function trafficSnapshot(): Promise<TrafficSnapshot> {
     const label = [
       str(f, "proto.l7", "l7_proto_name", "l7_proto", "protocol.l7", "application"),
       str(f, "proto.master_l7", "l7_master_proto_name"),
-      str(f, "info", "server_name", "sni", "tls.server_name"),
+      str(f, "proto.app", "l7_app_proto_name", "l7proto"),
+      str(f, "info", "server_name", "sni", "tls.server_name", "host_server_name"),
       str(f, "srv.name", "srv_ip.label", "server.name"),
     ]
       .filter(Boolean)
       .join(" ");
-    const key = classify(label);
-    if (!key) continue;
 
     const cli = str(f, "cli.ip", "cli_ip.ip", "client.ip", "cli_ip");
     const srv = str(f, "srv.ip", "srv_ip.ip", "server.ip", "srv_ip");
+    const key: TrafficAppKey =
+      isTelegramIp(srv) || isTelegramIp(cli) ? "telegram" : classify(label);
     const ip = isPrivate(cli) ? cli : isPrivate(srv) ? srv : cli || srv;
     if (!ip) continue;
 
