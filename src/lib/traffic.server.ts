@@ -269,12 +269,18 @@ export async function trafficSnapshot(): Promise<TrafficSnapshot> {
       .filter(Boolean)
       .join(" ");
 
-    const label = `${preferredLabel} ${searchableText(f).join(" ")}`;
-
     const cli = str(f, "cli.ip", "cli_ip.ip", "client.ip", "cli_ip");
     const srv = str(f, "srv.ip", "srv_ip.ip", "server.ip", "srv_ip");
-    const key: TrafficAppKey =
-      isTelegramIp(srv) || isTelegramIp(cli) ? "telegram" : classify(label);
+
+    // Cek label utama dulu (cepat). Penelusuran metadata mendalam hanya
+    // dilakukan kalau label utama belum mengenali aplikasinya.
+    let key: TrafficAppKey =
+      isTelegramIp(srv) || isTelegramIp(cli) ? "telegram" : classify(preferredLabel);
+    if (key === "other" || key === "browsing") {
+      const deep = classify(`${preferredLabel} ${searchableText(f).join(" ")}`);
+      if (deep !== "other") key = deep;
+    }
+
     const ip = isPrivate(cli) ? cli : isPrivate(srv) ? srv : cli || srv;
     if (!ip) continue;
 
