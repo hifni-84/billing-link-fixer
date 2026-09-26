@@ -58,6 +58,8 @@ const ICONS: Record<TrafficAppKey, typeof Youtube> = {
   telegram: Send,
   game: Gamepad2,
   meeting: Video,
+  browsing: Globe,
+  other: Network,
 };
 
 function TrafikPage() {
