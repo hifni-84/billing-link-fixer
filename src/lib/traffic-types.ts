@@ -8,7 +8,9 @@ export type TrafficAppKey =
   | "whatsapp"
   | "telegram"
   | "game"
-  | "meeting";
+  | "meeting"
+  | "browsing"
+  | "other";
 
 export type TrafficClient = {
   ip: string;
