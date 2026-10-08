@@ -14,7 +14,6 @@ import {
   Settings,
   ShieldCheck,
   Ticket,
-  TrendingUp,
   Wifi,
 
 } from "lucide-react";
