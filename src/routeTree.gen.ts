@@ -24,7 +24,6 @@ import { Route as TemplateRouteImport } from './routes/template'
 import { Route as UserAktifRouteImport } from './routes/user-aktif'
 import { Route as VoucherRouteImport } from './routes/voucher'
 import { Route as VpnRouteImport } from './routes/vpn'
-import { Route as WifiRouteImport } from './routes/wifi'
 import { Route as ApiPublicLogoDotpngRouteImport } from './routes/api/public/logo[.]png'
 import { Route as ApiPublicQrisDotpngRouteImport } from './routes/api/public/qris[.]png'
 import { Route as ApiPublicPayCallbackProviderRouteImport } from './routes/api/public/pay-callback.$provider'
@@ -104,11 +103,6 @@ const VpnRoute = VpnRouteImport.update({
   path: '/vpn',
   getParentRoute: () => rootRouteImport,
 } as any)
-const WifiRoute = WifiRouteImport.update({
-  id: '/wifi',
-  path: '/wifi',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ApiPublicLogoDotpngRoute = ApiPublicLogoDotpngRouteImport.update({
   id: '/api/public/logo.png',
   path: '/api/public/logo.png',
@@ -142,7 +136,6 @@ export interface FileRoutesByFullPath {
   '/user-aktif': typeof UserAktifRoute
   '/voucher': typeof VoucherRoute
   '/vpn': typeof VpnRoute
-  '/wifi': typeof WifiRoute
   '/api/public/logo.png': typeof ApiPublicLogoDotpngRoute
   '/api/public/qris.png': typeof ApiPublicQrisDotpngRoute
   '/api/public/pay-callback/$provider': typeof ApiPublicPayCallbackProviderRoute
@@ -163,7 +156,6 @@ export interface FileRoutesByTo {
   '/user-aktif': typeof UserAktifRoute
   '/voucher': typeof VoucherRoute
   '/vpn': typeof VpnRoute
-  '/wifi': typeof WifiRoute
   '/api/public/logo.png': typeof ApiPublicLogoDotpngRoute
   '/api/public/qris.png': typeof ApiPublicQrisDotpngRoute
   '/api/public/pay-callback/$provider': typeof ApiPublicPayCallbackProviderRoute
@@ -185,7 +177,6 @@ export interface FileRoutesById {
   '/user-aktif': typeof UserAktifRoute
   '/voucher': typeof VoucherRoute
   '/vpn': typeof VpnRoute
-  '/wifi': typeof WifiRoute
   '/api/public/logo.png': typeof ApiPublicLogoDotpngRoute
   '/api/public/qris.png': typeof ApiPublicQrisDotpngRoute
   '/api/public/pay-callback/$provider': typeof ApiPublicPayCallbackProviderRoute
@@ -208,7 +199,6 @@ export interface FileRouteTypes {
     | '/user-aktif'
     | '/voucher'
     | '/vpn'
-    | '/wifi'
     | '/api/public/logo.png'
     | '/api/public/qris.png'
     | '/api/public/pay-callback/$provider'
@@ -229,7 +219,6 @@ export interface FileRouteTypes {
     | '/user-aktif'
     | '/voucher'
     | '/vpn'
-    | '/wifi'
     | '/api/public/logo.png'
     | '/api/public/qris.png'
     | '/api/public/pay-callback/$provider'
@@ -250,7 +239,6 @@ export interface FileRouteTypes {
     | '/user-aktif'
     | '/voucher'
     | '/vpn'
-    | '/wifi'
     | '/api/public/logo.png'
     | '/api/public/qris.png'
     | '/api/public/pay-callback/$provider'
@@ -272,7 +260,6 @@ export interface RootRouteChildren {
   UserAktifRoute: typeof UserAktifRoute
   VoucherRoute: typeof VoucherRoute
   VpnRoute: typeof VpnRoute
-  WifiRoute: typeof WifiRoute
   ApiPublicLogoDotpngRoute: typeof ApiPublicLogoDotpngRoute
   ApiPublicQrisDotpngRoute: typeof ApiPublicQrisDotpngRoute
   ApiPublicPayCallbackProviderRoute: typeof ApiPublicPayCallbackProviderRoute
@@ -385,13 +372,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VpnRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/wifi': {
-      id: '/wifi'
-      path: '/wifi'
-      fullPath: '/wifi'
-      preLoaderRoute: typeof WifiRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/api/public/logo.png': {
       id: '/api/public/logo.png'
       path: '/api/public/logo.png'
@@ -432,7 +412,6 @@ const rootRouteChildren: RootRouteChildren = {
   UserAktifRoute: UserAktifRoute,
   VoucherRoute: VoucherRoute,
   VpnRoute: VpnRoute,
-  WifiRoute: WifiRoute,
   ApiPublicLogoDotpngRoute: ApiPublicLogoDotpngRoute,
   ApiPublicQrisDotpngRoute: ApiPublicQrisDotpngRoute,
   ApiPublicPayCallbackProviderRoute: ApiPublicPayCallbackProviderRoute,
