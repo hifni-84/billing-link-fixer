@@ -3,10 +3,11 @@
 - [x] Verifikasi tampilan publik dan pesan backend; login nyata dan keterkaitan modem akun pelanggan masih memerlukan pemeriksaan data server produksi.
 - [x] Pastikan daftar ONU dan portal WiFi membaca sumber GenieACS yang sama, serta pencarian menemukan username PPPoE pada semua koneksi.
 - [x] Tentukan langkah aman untuk memeriksa apakah modem Hadi sudah mendaftar ke GenieACS produksi.
-- [ ] Verifikasi keberadaan modem Hadi di GenieACS produksi; pengguna mengirim kode yang mirip nama akses TR-069, masih menunggu hasil cek baca-saja dari server.
+- [x] Pemeriksaan modem Hadi tidak dilanjutkan karena pengguna menghapus pengelolaan TR-069 dari billing.
 - [x] Tampilkan kegagalan sambungan NBI dari foto dengan jelas dan coba alamat lokal sebelum alamat LAN.
 - [x] Bedakan modem yang berhenti melapor TR-069 dari internet pelanggan yang putus, dan tampilkan peringatan jika banyak modem terhenti bersamaan.
 - [x] Sediakan pemeriksaan aman di server produksi untuk jalur ACS dan pencarian modem Hadi tanpa menampilkan sandi.
-- [ ] Periksa hasil pemeriksaan GenieACS di server produksi dan pulihkan jalur modem ke port 7547 jika masih terputus.
+- [x] Pengguna mengonfirmasi alamat tambahan 192.168.23.5 aktif di server.
 - [x] Pulihkan deteksi Telegram tanpa menghapus kategori Browsing Web dan Lainnya.
-- [ ] Verifikasi pengguna Telegram muncul kembali setelah pembaruan server produksi.
+- [x] Verifikasi Telegram tidak dilanjutkan karena pengguna menghapus ntopng dan Trafik Aplikasi.
+- [ ] Siapkan logo NAJWANET dan tampilan login GenieACS beserta pemasangan aman serta pemulihan tampilan lama.
