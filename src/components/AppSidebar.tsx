@@ -9,7 +9,7 @@ import {
   LayoutTemplate,
   LogOut,
   Network,
-  Radio,
+
   Receipt,
   Settings,
   ShieldCheck,
