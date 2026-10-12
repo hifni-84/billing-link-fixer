@@ -1,0 +1,89 @@
+/* Standalone GenieACS 1.2.x. App handlers and modem parameters stay unchanged. */
+:root {
+  --nn-background: oklch(0.975 0.005 180);
+  --nn-surface: oklch(1 0 0);
+  --nn-foreground: oklch(0.27 0.018 190);
+  --nn-muted: oklch(0.53 0.018 190);
+  --nn-border: oklch(0.89 0.012 180);
+  --nn-primary: oklch(0.48 0.092 183);
+  --nn-primary-hover: oklch(0.40 0.078 183);
+  --nn-accent: oklch(0.95 0.023 180);
+  --nn-shadow: 0 16px 52px oklch(0.27 0.018 190 / 0.08);
+  --color1: var(--nn-border);
+  --color2: var(--nn-muted);
+  --color3: var(--nn-accent);
+  --color4: var(--nn-primary);
+  --color5: var(--nn-foreground);
+}
+body { background: var(--nn-background); color: var(--nn-foreground); }
+body, input, button, select, option, textarea { font-family: Roboto, Arial, sans-serif; letter-spacing: 0; }
+#header { background: var(--nn-surface); border-color: var(--nn-border); }
+#header > .logo { padding: 12px 20px; }
+#header > .logo > img {
+  box-sizing: border-box;
+  width: 230px;
+  height: 56px;
+  margin: 0;
+  padding: 0;
+  object-fit: contain;
+  object-position: left center;
+  /* Local asset installed by apply-genieacs-theme.sh, no CDN dependency at runtime. */
+  content: url("najwanet-logo.png");
+}
+#header > .logo > .version { color: var(--nn-muted); font-size: 9px; right: 20px; bottom: 4px; }
+#content { padding: 12px; }
+input, select, textarea { background: var(--nn-surface); border-color: var(--nn-border); }
+input:focus, select:focus, textarea:focus { outline: 2px solid var(--nn-primary); outline-offset: 2px; }
+body:has(.page-login) #header { border: 0; padding-top: 36px; background: transparent; text-align: center; }
+body:has(.page-login) #header > .logo { padding: 16px; }
+body:has(.page-login) #header > .logo > img { width: 290px; height: 72px; object-position: center; }
+body:has(.page-login) #header > .logo > .version { position: static; margin-top: 8px; font-size: 10px; }
+body:has(.page-login) #content-wrapper { overflow: auto; justify-content: center; }
+body:has(.page-login) #content { flex-grow: 0; width: min(100%, 420px); min-width: 0; margin: 32px 20px; padding: 0; }
+.page-login {
+  box-sizing: border-box;
+  background: var(--nn-surface);
+  border: 1px solid var(--nn-border);
+  border-radius: 8px;
+  padding: 36px;
+  box-shadow: var(--nn-shadow);
+  width: 100%;
+}
+.page-login h1 { font-size: 24px; line-height: 1.3; color: var(--nn-foreground); margin: 0 0 28px; }
+.page-login form { width: 100%; }
+.page-login label { display: block; font-size: 13px; font-weight: 600; line-height: 1.6; }
+.page-login input:not([type=checkbox]):not([type=radio]):not([type=submit]):not([type=button]) {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 14px;
+  margin-top: 8px;
+  border-radius: 6px;
+  color: var(--nn-foreground);
+  font-size: 15px;
+}
+.page-login button.primary, .page-login input[type=submit] {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 16px;
+  background: var(--nn-primary);
+  color: var(--nn-surface);
+  border: 1px solid var(--nn-primary);
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+}
+.page-login button.primary:hover:enabled { background: var(--nn-primary-hover); color: var(--nn-surface); }
+.page-login a { font-size: 13px; text-decoration: none; }
+.page-login a:hover { background: transparent; color: var(--nn-primary-hover); text-decoration: underline; }
+.page-login p.error { line-height: 1.5; overflow-wrap: anywhere; }
+@media (max-width: 600px) {
+  body:has(.page-login) #header { padding-top: 20px; }
+  body:has(.page-login) #header > .logo > img { width: 240px; height: 60px; }
+  body:has(.page-login) #content { margin: 24px 16px; }
+  .page-login { padding: 28px 24px; }
+  #header > .logo > img { width: 185px; }
+}
+@media (prefers-reduced-motion: reduce) { .page-login * { transition: none; } }
