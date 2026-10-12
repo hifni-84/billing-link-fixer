@@ -10,3 +10,5 @@
 <!-- LOVABLE:END -->
 
 Trafik aplikasi harus membaca seluruh metadata flow ntopng dan memprioritaskan aplikasi spesifik sebelum Browsing Web/Lainnya agar label nDPI lintas versi tidak hilang.
+
+- Customize standalone GenieACS through version-checked, reversible static-asset deployment scripts in deploy/genieacs-theme; keep its database, authentication code, and the billing interface untouched to isolate branding from operations.
