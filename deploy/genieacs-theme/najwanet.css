@@ -28,7 +28,7 @@ body, input, button, select, option, textarea { font-family: Roboto, Arial, sans
   object-fit: contain;
   object-position: left center;
   /* Local asset installed by apply-genieacs-theme.sh, no CDN dependency at runtime. */
-  content: url("najwanet-logo.png");
+  content: url("najwanet-logo.png?v=najwanet1");
 }
 #header > .logo > .version { color: var(--nn-muted); font-size: 9px; right: 20px; bottom: 4px; }
 #content { padding: 12px; }
@@ -39,7 +39,7 @@ body:has(.page-login) #header > .logo { padding: 16px; }
 body:has(.page-login) #header > .logo > img { width: 290px; height: 72px; object-position: center; }
 body:has(.page-login) #header > .logo > .version { position: static; margin-top: 8px; font-size: 10px; }
 body:has(.page-login) #content-wrapper { overflow: auto; justify-content: center; }
-body:has(.page-login) #content { flex-grow: 0; width: min(100%, 420px); min-width: 0; margin: 32px 20px; padding: 0; }
+body:has(.page-login) #content { flex-grow: 0; width: min(100%, 420px); min-width: 0; margin: 32px 20px; padding: 36px; }
 .page-login {
   box-sizing: border-box;
   background: var(--nn-surface);
@@ -82,7 +82,7 @@ body:has(.page-login) #content { flex-grow: 0; width: min(100%, 420px); min-widt
 @media (max-width: 600px) {
   body:has(.page-login) #header { padding-top: 20px; }
   body:has(.page-login) #header > .logo > img { width: 240px; height: 60px; }
-  body:has(.page-login) #content { margin: 24px 16px; }
+  body:has(.page-login) #content { margin: 24px 16px; padding: 28px 24px; }
   .page-login { padding: 28px 24px; }
   #header > .logo > img { width: 185px; }
 }
