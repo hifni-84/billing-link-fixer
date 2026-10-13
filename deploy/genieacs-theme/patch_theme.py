@@ -12,7 +12,7 @@ MARKER = "/* NAJWANET THEME START */"
 def apply_theme(package, theme, assets, backup):
     package, theme, assets, backup = map(Path, (package, theme, assets, backup))
     info = json.loads((package / "package.json").read_text())
-    if info.get("name") != "genieacs" or info.get("version") != "1.2.13":
+    if info.get("name") != "genieacs" or info.get("version", "").split("+")[0] != "1.2.13":
         raise ValueError("Tema ini diuji untuk GenieACS 1.2.13 saja.")
     public = package / "public"
     css_files = list(public.glob("app-*.css"))

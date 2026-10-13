@@ -34,6 +34,11 @@ class ThemeSafetyTests(unittest.TestCase):
         self.apply(self.root / "backup")
         self.assertEqual((self.public / "app-test.js").read_bytes(), b"original login logic")
 
+    def test_official_version_with_build_metadata_is_supported(self):
+        (self.package / "package.json").write_text(json.dumps({"name": "genieacs", "version": "1.2.13+240606fc80"}))
+        self.apply(self.root / "backup")
+        self.assertTrue((self.public / "najwanet-logo.png").is_file())
+
     def test_restore_recovers_original_assets(self):
         backup = self.root / "backup"
         self.apply(backup)

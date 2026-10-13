@@ -10,4 +10,4 @@
 - [x] Pengguna mengonfirmasi alamat tambahan 192.168.23.5 aktif di server.
 - [x] Pulihkan deteksi Telegram tanpa menghapus kategori Browsing Web dan Lainnya.
 - [x] Verifikasi Telegram tidak dilanjutkan karena pengguna menghapus ntopng dan Trafik Aplikasi.
-- [ ] Siapkan logo NAJWANET dan tampilan login GenieACS beserta pemasangan aman serta pemulihan tampilan lama.
+- [x] Siapkan logo NAJWANET dan tampilan login GenieACS beserta pemasangan aman serta pemulihan tampilan lama; penerapan server dilakukan pengguna.

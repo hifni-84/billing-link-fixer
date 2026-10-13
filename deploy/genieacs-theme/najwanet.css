@@ -39,7 +39,7 @@ body:has(.page-login) #header > .logo { padding: 16px; }
 body:has(.page-login) #header > .logo > img { width: 290px; height: 72px; object-position: center; }
 body:has(.page-login) #header > .logo > .version { position: static; margin-top: 8px; font-size: 10px; }
 body:has(.page-login) #content-wrapper { overflow: auto; justify-content: center; }
-body:has(.page-login) #content { flex-grow: 0; width: min(100%, 420px); min-width: 0; margin: 32px 20px; padding: 36px; }
+body:has(.page-login) #content { flex-grow: 0; align-self: flex-start; width: min(100%, 420px); min-width: 0; margin: 32px 20px; padding: 36px; }
 .page-login {
   box-sizing: border-box;
   background: var(--nn-surface);
